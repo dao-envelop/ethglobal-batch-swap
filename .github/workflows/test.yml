@@ -26,15 +26,18 @@ jobs:
 
       - name: Run Forge fmt
         run: |
+          cd smart-wallet
           forge fmt --check
         id: fmt
 
       - name: Run Forge build
         run: |
+          cd smart-wallet 
           forge build --sizes
         id: build
 
       - name: Run Forge tests
         run: |
+          cd smart-wallet
           forge test -vvv
         id: test
