@@ -2,7 +2,8 @@
 FROM node:18-alpine as build
 WORKDIR /app
 COPY . .
-RUN npm install --legacy-peer-deps --force && npm run build
+RUN npm install --legacy-peer-deps  && npm run build
+#RUN npm ci && npm run build
 
 # Run time
 FROM nginx
