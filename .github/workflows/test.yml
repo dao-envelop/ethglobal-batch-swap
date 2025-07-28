@@ -67,5 +67,5 @@ jobs:
           script: |
             cd ~/eth-global/frontend
             docker compose --profile stage down
-            docker compose -f docker-compose.yaml build --no-cache
+            docker compose --profile build --no-cache
             docker compose --profile stage up -d
