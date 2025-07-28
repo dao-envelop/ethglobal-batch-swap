@@ -41,3 +41,33 @@ jobs:
           cd smart-wallet
           forge test -vvv
         id: test
+  deploy:
+    name: Deploy docker
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Copy frontend to server
+        uses: appleboy/scp-action@v0.1.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "frontend/*"
+          target: "~/eth-global/frontend"
+
+      - name: Build and run container on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            ls -lA
+            export
+            cd ~/eth-global/frontend
+            docker compose --profile stage down
+#            docker compose -f docker-compose.yaml build --no-cache
+            docker compose --profile stage up -d
