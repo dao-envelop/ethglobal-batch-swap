@@ -1,0 +1,33 @@
+services:
+  ethglobal-frontend-service:
+    profiles: [stage]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ethglobal_frontend
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ethglobal_frontend.rule=Host(`ethglobal.envelop.is`)
+      - traefik.http.routers.ethglobal_frontend.entrypoints=websecure
+      - traefik.http.routers.ethglobal_frontend.tls.certresolver=leresolver
+      - traefik.http.routers.ethglobal_frontend.tls=true
+
+    restart: always
+
+  ethglobal-frontend-local:
+    profiles: [local]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    #image: nginx
+    container_name:  ethglobal-frontend_local
+    volumes:
+     - ./nginx:/etc/nginx/templates
+     - ./build:/usr/share/nginx/html/app
+    ports:
+     - 8080:8081
+    environment:
+     - NGINX_HOST=localhost
+     - NGINX_PORT=8081
+     - APP_URL=/swapper
+    command: [nginx-debug, '-g', 'daemon off;']

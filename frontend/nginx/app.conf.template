@@ -1,0 +1,20 @@
+server {
+    listen ${NGINX_PORT};
+    server_name ${NGINX_HOST};
+    server_tokens off;
+
+    root /usr/share/nginx/html/app;
+
+    # Env var APP_URL must start with `/` !!!
+    location ${APP_URL} {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location ~ ${APP_URL}/(static|favicon|manifest.json|robots.txt) {
+        try_files $uri $uri/ @rewrites;
+    }
+
+    location @rewrites {
+        rewrite ^${APP_URL}\/(.*)$ /$1 last;
+    }
+}
