@@ -1,0 +1,579 @@
+
+import {
+	useContext,
+	useEffect,
+	useState
+} from "react";
+import {
+	_ModalTypes,
+	ERC20Context,
+	InfoModalContext,
+	Web3Context
+} from "../../dispatchers";
+import {
+	_AssetType,
+	BigNumber,
+	ChainType,
+	chainTypeToERC20,
+	combineURLs,
+	compactString,
+	getChainId,
+	getNullERC20,
+	localStorageGet,
+	localStorageSet,
+	tokenToFloat,
+	Web3
+} from "@envelop/envelop-client-core";
+
+import {
+	getUserSmartWalletsFromAPI
+} from "../../utils/smartwallets";
+
+import InputWithOptions from "../InputWithOptions";
+
+import config from '../../app.config.json';
+import TokenAmounts from "../TokenAmounts";
+import CopyToClipboard from "react-copy-to-clipboard";
+
+import icon_i_copy          from '../../static/pics/icons/i-copy.svg';
+import {
+	createSmartWallet,
+	getSmartWalletBalances,
+} from "../../utils/smartwallets";
+import TippyWrapper from "../TippyWrapper";
+
+type SmartWalletSelectorProps = {
+	onWalletSelect?: (e: string) => void,
+	onWalletListChange?: (userWallets: Array<SmartWalletType>) => void,
+	showError?: boolean,
+	callbackAfterCreate?: (userWallets: Array<SmartWalletType>, created: SmartWalletType) => void,
+}
+
+type SmartWalletType = {
+	contractAddress: string,
+	name?: string,
+	symbol?: string,
+}
+type SavedSmartWalletType = {
+	chainId: number,
+	userAddress: string,
+	contractAddress: string,
+	name?: string,
+	symbol?: string,
+}
+
+export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
+
+	const SMALL_AMOUNT = 0.00001;
+
+	const {
+		onWalletSelect,
+		onWalletListChange,
+		showError,
+		callbackAfterCreate,
+	} = props;
+
+	const {
+		userAddress,
+		currentChain,
+		web3,
+		getWeb3Force,
+	} = useContext(Web3Context);
+	const {
+		erc20List,
+		ERC20Balances,
+		updateERC20Balance,
+	} = useContext(ERC20Context);
+	const {
+		setModal,
+		unsetModal,
+		setLoading,
+	} = useContext(InfoModalContext);
+
+	const [ smartWalletContract,             setSmartWalletContract             ] = useState('');
+	const [ userSmartWallets,                setUserSmartWallets                ] = useState<Array<SmartWalletType>>([]);
+	const [ selectedWallet,                  setSelectedWallet                  ] = useState('');
+
+	const [ WNFTFactoryAddress,              setWNFTFactoryAddress              ] = useState('');
+
+	const [ inputCustomWalletParams,         setInputCustomWalletParams         ] = useState(false);
+	const [ inputWalletName,                 setInputWalletName                 ] = useState('');
+	const [ inputWalletSymbol,               setInputWalletSymbol               ] = useState('');
+	const [ inputHideSmallAmounts,           setInputHideSmallAmounts           ] = useState(JSON.parse(localStorageGet('hidesmallamounts') || 'false'));
+
+	const [ noWallets,                       setNoWallets                       ] = useState(false);
+
+	const [ copiedHint,                      setCopiedHint                      ] = useState(false);
+
+	useEffect(() => {
+
+		if ( !currentChain ) { return; }
+
+		try {
+			const foundChain = config.CHAIN_SPECIFIC_DATA.find((item) => { return item.chainId === currentChain.chainId });
+			if ( !foundChain || !foundChain.WNFTFactory ) { return; }
+
+			setWNFTFactoryAddress(foundChain.WNFTFactory);
+			console.log('WNFTFactoryAddress', foundChain.WNFTFactory);
+			setSmartWalletContract(foundChain.smartWalletContract);
+			console.log('smartWalletContractAddress', foundChain.smartWalletContract);
+		} catch(e) {
+			console.log('Cannot load params', e);
+		}
+
+	}, [ currentChain ]);
+	useEffect(() => {
+		console.log('wallet selector useEffect');
+		if ( !currentChain ) { return; }
+		if ( !userAddress ) { return; }
+
+		setSelectedWallet('');
+		if ( onWalletListChange ) { onWalletListChange([]); }
+		setUserSmartWallets([]);
+		setNoWallets(false);
+		if ( onWalletSelect ) { onWalletSelect(''); }
+
+		const savedWallets: Array<SavedSmartWalletType> = JSON.parse(localStorageGet('savedsmartwallets') || '[]');
+		const savedWalletsCurrent: Array<SavedSmartWalletType> = savedWallets.filter((item) => {
+			return item.chainId === currentChain.chainId &&
+				item.userAddress === userAddress
+		});
+
+		getUserSmartWalletsFromAPI(currentChain.chainId, userAddress)
+			.then((data) => {
+
+				const savedWalletsFiltered: Array<SavedSmartWalletType> = savedWalletsCurrent.filter((item) => {
+					return !data.find((iitem: SmartWalletType) => {
+						return item.contractAddress.toLowerCase() === iitem.contractAddress.toLowerCase()
+					});
+				});
+				localStorageSet('savedsmartwallets', JSON.stringify(
+					savedWallets.filter((item) => {
+						if ( item.chainId !== currentChain.chainId ) { return true; }
+						if ( item.userAddress !== userAddress ) { return true; }
+						return !data.find((iitem: SmartWalletType) => { return item.contractAddress.toLowerCase() === iitem.contractAddress.toLowerCase() });
+					})
+				));
+
+				const walletList = [
+					...data,
+					...savedWalletsFiltered,
+				];
+
+				if ( !walletList.length ) {
+					setNoWallets(true);
+				} else {
+					if ( onWalletListChange ) { onWalletListChange(walletList); }
+					setUserSmartWallets(walletList);
+				}
+			})
+			.catch((e) => {
+				console.log('Cannot load user wallets', e);
+
+				if ( !savedWallets.length ) {
+					setNoWallets(true);
+				} else {
+					if ( onWalletListChange ) { onWalletListChange(savedWallets); }
+					setUserSmartWallets(savedWallets);
+				}
+			})
+
+	}, [ currentChain, userAddress ]);
+
+	const createWalletSubmit = async (_currentChain: ChainType, _web3: Web3, _userAddress: string, isMultisig?: boolean) => {
+
+		if ( !smartWalletContract ) {
+			unsetModal();
+			setModal({
+				type: _ModalTypes.error,
+				title: `No smartWallet contract address`,
+			});
+			return;
+		}
+
+		setLoading('Waiting for wallet');
+
+		let params: { name?: string, symbol?: string } = {};
+		if ( inputCustomWalletParams && inputWalletSymbol !== '' ) { params = { ...params, symbol: inputWalletSymbol } }
+		if ( inputCustomWalletParams && inputWalletName   !== '' ) { params = { ...params, name: inputWalletName     } }
+
+		let txResp;
+		try {
+			txResp = await createSmartWallet(_web3, smartWalletContract, _userAddress, params);
+		} catch(e: any) {
+			setModal({
+				type: _ModalTypes.error,
+				title: `Cannot create wallet`,
+				details: [
+					`Smart wallet contract: ${smartWalletContract}`,
+					`User address: ${userAddress}`,
+					'',
+					e.message || e,
+				]
+			});
+			return;
+		}
+
+		const savedWallets: Array<SavedSmartWalletType> = JSON.parse(localStorageGet('savedsmartwallets') || '[]');
+		localStorageSet('savedsmartwallets', JSON.stringify(
+			[
+				...savedWallets.filter((item) => {
+					return item.chainId !== currentChain?.chainId ||
+						item.userAddress !== userAddress ||
+						item.contractAddress.toLowerCase() !== txResp.events.Initialized.address.toLowerCase()
+				}),
+				{
+					chainId: currentChain?.chainId,
+					userAddress: userAddress,
+					contractAddress: txResp.events.Initialized.address,
+					name: inputWalletName,
+					symbol: inputWalletSymbol,
+				}
+			]
+		));
+
+		setInputCustomWalletParams(false);
+		setInputWalletName('');
+		setInputWalletSymbol('');
+
+		unsetModal();
+		const smartWalletsUpdated = [
+			...userSmartWallets.filter((item) => { return item.contractAddress.toLowerCase() !== txResp.events.Initialized.address.toLowerCase() }),
+			{
+				contractAddress: txResp.events.Initialized.address,
+				name: inputWalletName,
+				symbol: inputWalletSymbol,
+			}
+		];
+		if ( onWalletListChange ) { onWalletListChange(smartWalletsUpdated); }
+		setUserSmartWallets(smartWalletsUpdated)
+		setSelectedWallet(txResp.events.Initialized.address);
+		if ( onWalletSelect ) { onWalletSelect(txResp.events.Initialized.address); }
+		setModal({
+			type: _ModalTypes.success,
+			title: `Wallet has been created`,
+			buttons: [{
+				text: 'Ok',
+				clickFunc: () => {
+					unsetModal();
+					if ( callbackAfterCreate ) {
+						callbackAfterCreate(
+							userSmartWallets,
+							{
+								contractAddress: txResp.events.Initialized.address,
+								name: params.name,
+								symbol: params.symbol,
+							}
+						);
+					}
+				}
+			}],
+			copyables: [{
+				title: 'Wallet address',
+				content: txResp.events.Initialized.address
+			}],
+			links: [{
+				text: `View tx on ${_currentChain.explorerName}`,
+				url: combineURLs(_currentChain.explorerBaseUrl, `/tx/${txResp.transactionHash}`)
+			}],
+		});
+	}
+
+	const getHideSmallAmountButton = () => {
+
+		const foundSmallAmountToken = ERC20Balances.find((item) => {
+			if ( item.balance.balance.eq(0) ) { return false; }
+			if ( !currentChain ) { return false; }
+
+			let foundToken = [
+				chainTypeToERC20(currentChain),
+				...erc20List
+			].find((iitem) => {
+				return item.walletAddress.toLowerCase() === selectedWallet.toLowerCase() &&
+					item.balance.contractAddress.toLowerCase() === iitem.contractAddress.toLowerCase();
+			});
+			if ( !foundToken ) {
+				foundToken = getNullERC20(item.balance.contractAddress);
+			}
+			if ( !foundToken.decimals ) { return false; }
+
+			return tokenToFloat(item.balance.balance, foundToken.decimals).lte(SMALL_AMOUNT);
+		});
+		if ( !foundSmallAmountToken ) { return null; }
+
+		return (
+			<div className="input-group mt-5 mb-1">
+			<label className="checkbox">
+				<input
+					type="checkbox"
+					name=""
+					checked={ inputHideSmallAmounts }
+					onChange={(e) => {
+						localStorageSet('hidesmallamounts', JSON.stringify(e.target.checked));
+						setInputHideSmallAmounts(e.target.checked);
+					}}
+				/>
+				<span className="check"> </span>
+				<span className="check-text">
+					Hide small amounts
+				</span>
+			</label>
+			</div>
+		)
+	}
+	const getWalletBalancesBlock = () =>  {
+
+		if ( selectedWallet === '' ) { return null; }
+
+		return (
+			<div className="col-md-6 mb-5 mb-md-0">
+				{ getHideSmallAmountButton() }
+				<TokenAmounts
+					walletAddress={ selectedWallet }
+					tokens={
+						ERC20Balances
+						.filter((item) => { return item.walletAddress.toLowerCase() === selectedWallet.toLowerCase() })
+						.filter((item) => {
+							if ( !currentChain ) { return true; }
+
+							let foundToken = [
+								chainTypeToERC20(currentChain),
+								...erc20List
+							].find((iitem) => {
+								return item.balance.contractAddress.toLowerCase() === iitem.contractAddress.toLowerCase();
+							});
+							if ( !foundToken ) {
+								foundToken = getNullERC20(item.balance.contractAddress);
+							}
+
+							if ( !foundToken.decimals ) { return false; }
+
+							if ( inputHideSmallAmounts ) {
+								return tokenToFloat(item.balance.balance, foundToken.decimals).gt(SMALL_AMOUNT);
+							} else {
+								return !item.balance.balance.eq(0)
+							}
+						})
+						.map((item) => {
+							return {
+								contractAddress: item.balance.contractAddress,
+								assetType: item.balance.contractAddress === '0x0000000000000000000000000000000000000000' ? _AssetType.native : _AssetType.ERC20,
+								amount: item.balance.balance
+							}
+						})
+					}
+					recipients={1}
+					rows={99}
+					SMALL_AMOUNT={SMALL_AMOUNT}
+				/>
+			</div>
+		)
+	}
+
+	const getCopyBtn = () => {
+
+		if ( selectedWallet === '' ) { return null; }
+
+		return (
+			<div className="input-group mt-2">
+			<CopyToClipboard
+				text={ selectedWallet }
+				onCopy={() => {
+					setCopiedHint(true);
+					setTimeout(() => { setCopiedHint(false); }, 5*1000);
+				}}
+			>
+				<button className="btn-copy">
+					<img src={ icon_i_copy } alt="" />
+					<span className="ml-2">Copy wallet address</span>
+					<span className="btn-action-info" style={{ display: copiedHint ? 'block' : 'none' }}>Copied</span>
+				</button>
+			</CopyToClipboard>
+			</div>
+		)
+	}
+	const getWalletParams = () => {
+		return (
+			<>
+			<div className="input-group mt-5 mb-1">
+			<label className="checkbox">
+				<input
+					type="checkbox"
+					name=""
+					checked={ inputCustomWalletParams }
+					onChange={(e) => {
+						setInputCustomWalletParams(e.target.checked);
+					}}
+				/>
+				<span className="check"> </span>
+				<span className="check-text">
+					Custom wallet params
+				</span>
+			</label>
+			</div>
+			{
+				inputCustomWalletParams ? (
+					<>
+					<div className="input-group mt-3 mb-3">
+						<label className="input-label">
+							Wallet symbol
+							<TippyWrapper
+								msg="Shortcode of wNFT which will be minted for smart wallet"
+								elClass="ml-1"
+							></TippyWrapper>
+						</label>
+						<div className="select-group">
+							<input
+								className="input-control"
+								type="text"
+								value={ inputWalletSymbol }
+								onChange={(e) => {
+									setInputWalletSymbol(e.target.value);
+								}}
+							/>
+						</div>
+					</div>
+					<div className="input-group mb-3">
+						<label className="input-label">
+							Wallet name
+						</label>
+						<div className="select-group">
+							<input
+								className="input-control"
+								type="text"
+								value={ inputWalletName }
+								onChange={(e) => {
+									setInputWalletName(e.target.value);
+								}}
+							/>
+						</div>
+					</div>
+					</>
+				) : null
+			}
+			</>
+		)
+	}
+
+	if ( !currentChain ) { return null; }
+
+	const getSmartWalleLabel = (item: SmartWalletType) => {
+		if ( !item.name && !item.symbol ) { return item.contractAddress; }
+
+		let output = '';
+		if ( item.symbol ) { output = `${output} ${item.symbol}`.trim(); }
+		if ( item.name ) { output = `${output} — ${item.name}`.trim(); }
+
+		output = `${output} (${compactString(item.contractAddress)})`;
+		return output;
+	}
+
+	return (
+		<div className="c-wrap">
+
+			<div className="c-wrap__header d-block">
+				<div className="row align-items-center">
+					<div className="col-12 col-md-auto">
+						<div className="h3 mt-0">Smart wallet to use</div>
+						{ noWallets ? ( <div className="h4 mt-2 text-green">To use the dapp you need create smart wallet</div> ) : null }
+					</div>
+				</div>
+			</div>
+
+			<div className="row">
+				<div className="col-md-6 mb-5 mb-md-0">
+				{
+					userSmartWallets.length ? (
+						<InputWithOptions
+							inputClass={`${ showError ? 'has-error' : '' }`}
+							value={ selectedWallet }
+							placeholder="Select wallet"
+							onSelect={(e) => {
+								const value = e.value;
+								setSelectedWallet(value);
+								if ( onWalletSelect ) { onWalletSelect(value); }
+
+								[
+									chainTypeToERC20(currentChain),
+									...erc20List
+								]
+									.forEach((item) => {
+										const foundBalance = ERC20Balances.find((iitem) => {
+											return iitem.walletAddress.toLowerCase() === value.toLowerCase() &&
+												iitem.balance.contractAddress.toLowerCase() === item.contractAddress.toLowerCase()
+										});
+										if ( !foundBalance ) { updateERC20Balance(item.contractAddress, value); }
+									})
+
+								getSmartWalletBalances(currentChain.chainId, value)
+									.then((data) => {
+										data.forEach((item) => {
+											updateERC20Balance(item.contractAddress, value)
+										})
+									})
+							}}
+							options={
+								userSmartWallets.map((item) => {
+									return {
+										label: getSmartWalleLabel(item),
+										value: item.contractAddress
+									}
+								})
+							}
+							showArrow={ true }
+						/>
+					) : null
+				}
+
+					{ getCopyBtn() }
+					{ getWalletParams() }
+
+					<div className="d-inline-block mr-2 my-3">
+						<button
+							className="btn btn-outline"
+							disabled={ WNFTFactoryAddress === '' }
+							onClick={async () => {
+
+								if ( !currentChain ) { return; }
+								let _web3 = web3;
+								let _userAddress = userAddress;
+								let _currentChain = currentChain;
+
+								if ( !web3 || !userAddress || await getChainId(web3) !== _currentChain.chainId ) {
+									setLoading('Waiting for wallet');
+
+									try {
+										const web3Params = await getWeb3Force(_currentChain.chainId);
+
+										_web3 = web3Params.web3;
+										_userAddress = web3Params.userAddress;
+										_currentChain = web3Params.chain;
+										unsetModal();
+									} catch(e: any) {
+										setModal({
+											type: _ModalTypes.error,
+											title: 'Error with wallet',
+											details: [
+												e.message || e
+											]
+										});
+										return;
+									}
+								}
+
+								if ( !_web3 || !_userAddress || !_currentChain ) { return; }
+								const isMultisig = localStorageGet('authMethod').toLowerCase() === 'safe';
+
+								createWalletSubmit(_currentChain, _web3, _userAddress, isMultisig);
+
+							}}
+						>Create smart wallet</button>
+					</div>
+				</div>
+
+				{ getWalletBalancesBlock() }
+			</div>
+		</div>
+	)
+
+}

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 24.0.1, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 32 32" style="enable-background:new 0 0 32 32;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill-rule:evenodd;clip-rule:evenodd;fill:#246CF6;}
+	.st1{fill-rule:evenodd;clip-rule:evenodd;fill:url(#path-4_4_);}
+	.st2{fill-rule:evenodd;clip-rule:evenodd;fill:url(#path-4_5_);}
+	.st3{fill-rule:evenodd;clip-rule:evenodd;fill:url(#path-4_6_);}
+	.st4{fill-rule:evenodd;clip-rule:evenodd;fill:#FFFFFF;}
+</style>
+<title>Components/OneArt/light</title>
+<g>
+	<g id="Oval">
+		<g>
+			<ellipse id="path-4" class="st0" cx="16" cy="16" rx="15.7" ry="15.7"/>
+		</g>
+		<g>
+			
+				<radialGradient id="path-4_4_" cx="-267.6632" cy="441.8519" r="0.7466" gradientTransform="matrix(2.6165 31.8655 41.342 -3.3946 -17566.4141 10060.8203)" gradientUnits="userSpaceOnUse">
+				<stop  offset="0" style="stop-color:#E06BF8"/>
+				<stop  offset="1" style="stop-color:#F8876B;stop-opacity:0"/>
+			</radialGradient>
+			<ellipse id="path-4_1_" class="st1" cx="16" cy="16" rx="15.7" ry="15.7"/>
+		</g>
+		<g>
+			
+				<radialGradient id="path-4_5_" cx="-277.1168" cy="445.4223" r="0.5664" gradientTransform="matrix(-22.3988 22.8156 36.225 35.5633 -22310.8301 -9486.4326)" gradientUnits="userSpaceOnUse">
+				<stop  offset="0" style="stop-color:#00BF98"/>
+				<stop  offset="1" style="stop-color:#00BF98;stop-opacity:0"/>
+			</radialGradient>
+			<ellipse id="path-4_2_" class="st2" cx="16" cy="16" rx="15.7" ry="15.7"/>
+		</g>
+		<g>
+			
+				<radialGradient id="path-4_6_" cx="-267.3934" cy="443.9227" r="0.8652" gradientTransform="matrix(1.957765e-15 31.9727 41.4812 -2.539989e-15 -18385.1387 8541.3418)" gradientUnits="userSpaceOnUse">
+				<stop  offset="0" style="stop-color:#E06BF8"/>
+				<stop  offset="1" style="stop-color:#E06BF8;stop-opacity:0"/>
+			</radialGradient>
+			<ellipse id="path-4_3_" class="st3" cx="16" cy="16" rx="15.7" ry="15.7"/>
+		</g>
+	</g>
+	<path id="Path" class="st4" d="M16.2,6.9c1-0.7,2.4,0,2.4,1.2l0,0v15.2c0,0.9-0.7,1.6-1.5,1.6c-0.8,0-1.5-0.7-1.5-1.5l0,0V11.2
+		l-3.4,2.3c-0.7,0.5-1.6,0.3-2.1-0.4l0,0c-0.5-0.7-0.3-1.6,0.4-2.1l0,0L16.2,6.9z"/>
+</g>
+</svg>
