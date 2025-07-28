@@ -56,7 +56,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           source: "frontend/*"
-          target: "~/eth-global/frontend"
+          target: "~/eth-global"
 
       - name: Build and run container on server
         uses: appleboy/ssh-action@v1.0.3
