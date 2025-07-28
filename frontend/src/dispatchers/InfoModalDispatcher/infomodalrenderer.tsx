@@ -42,13 +42,6 @@ export default function InfoModalRenderer(props: { modal: InfoModalType | undefi
 
 	if ( !modal ) { return null; }
 
-	const getIcon = () => {
-
-		const iconName = _ModalTypes[modal.type];
-		const icon = require(`./icons/${ iconName }.png`);
-
-		return null;
-	}
 	const getTitle = () => {
 		if ( !modal.title ) { return null; }
 
@@ -305,8 +298,6 @@ export default function InfoModalRenderer(props: { modal: InfoModalType | undefi
 			<div className="container">
 			<div className="modal__content">
 			<div className={`c-info ${ onlyTitle ? 'only-title' : '' }`}>
-
-				{ getIcon() }
 
 				<div className="c-info__text">
 

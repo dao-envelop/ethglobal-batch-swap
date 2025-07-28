@@ -346,7 +346,7 @@ export default function Header() {
 						size      = {5}
 						scale     = {8}
 						color     = "#141616"
-						bgColor   = "#4afebf"
+						bgColor   = "#7FC7FF"
 						spotColor = "#ffffff"
 					/>
 				</div>
