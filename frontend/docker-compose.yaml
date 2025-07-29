@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     container_name: ethglobal_frontend
     environment:
-     - NGINX_HOST=localhost
+     - NGINX_HOST=ethglobal.envelop.is
      - NGINX_PORT=8081
      - APP_URL=/swapper
     labels:
