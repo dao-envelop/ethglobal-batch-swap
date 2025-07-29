@@ -11,7 +11,7 @@ services:
      - APP_URL=/swapper
     labels:
       - traefik.enable=true
-      - traefik.http.routers.ethglobal_frontend.rule=Host(`ethglobal.envelop.is`)
+      - traefik.http.routers.ethglobal_frontend.rule=Host(`ethglobal.envelop.is`)  && Path(`/swapper`)
       - traefik.http.routers.ethglobal_frontend.entrypoints=websecure
       - traefik.http.routers.ethglobal_frontend.tls.certresolver=leresolver
       - traefik.http.routers.ethglobal_frontend.tls=true
