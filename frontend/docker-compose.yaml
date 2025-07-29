@@ -15,6 +15,9 @@ services:
       - traefik.http.routers.ethglobal_frontend.entrypoints=websecure
       - traefik.http.routers.ethglobal_frontend.tls.certresolver=leresolver
       - traefik.http.routers.ethglobal_frontend.tls=true
+      - traefik.http.routers.ethglobal_frontend.middlewares=to-http
+      - traefik.http.services.ethglobal_frontend-service.loadbalancer.server.port=8081
+      - traefik.http.middlewares.to-http.redirectscheme.scheme=http
     restart: always
 
   ethglobal-frontend-local:
