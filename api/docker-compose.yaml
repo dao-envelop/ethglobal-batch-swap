@@ -1,0 +1,40 @@
+# Docker Networks
+networks:
+  ci-server:
+    external: true
+    name: hostenv_ci-server
+
+services:
+  ethglobal-api-service:
+    profiles: [stage]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ethglobal_api
+    restart: always
+    env_file: ./.env
+    networks:
+      - ci-server
+    labels:
+      - traefik.enable=true
+      #- traefik.http.routers.ethglobal_frontend.rule=Host(`ethglobal.envelop.is`)  && Path(`/swapper`)
+      - traefik.http.routers.ethglobal_api.rule=Host(`api.ethglobal.envelop.is `) 
+      - traefik.http.routers.ethglobal_api.entrypoints=websecure
+      - traefik.http.routers.ethglobal_api.tls.certresolver=leresolver
+      - traefik.http.routers.ethglobal_api.tls=true
+      #- traefik.http.routers.ethglobal_frontend.middlewares=to-http
+      #- traefik.http.services.ethglobal_api-service.loadbalancer.server.port=8081
+      #- traefik.http.middlewares.to-http.redirectscheme.scheme=http
+
+  ethglobal-api-service-local:
+    profiles: [local]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    #image: nginx
+    container_name:  ethglobal_api_local
+    volumes:
+      - ./:/code
+    ports:
+     - 8080:80
+    env_file: ./.env
