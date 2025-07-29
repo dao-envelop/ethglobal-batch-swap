@@ -70,7 +70,7 @@ jobs:
             docker compose --profile stage down
             docker compose --profile stage up -d
 
-  deploy:
+  deploy-api:
     name: Deploy Api in docker
     runs-on: ubuntu-latest
     timeout-minutes: 30 
