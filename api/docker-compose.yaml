@@ -18,7 +18,7 @@ services:
     labels:
       - traefik.enable=true
       #- traefik.http.routers.ethglobal_frontend.rule=Host(`ethglobal.envelop.is`)  && Path(`/swapper`)
-      - traefik.http.routers.ethglobal_api.rule=Host(`apidev.envelop.is `) 
+      - traefik.http.routers.ethglobal_api.rule=Host(`apidev.envelop.is`) 
       - traefik.http.routers.ethglobal_api.entrypoints=websecure
       - traefik.http.routers.ethglobal_api.tls.certresolver=leresolver
       - traefik.http.routers.ethglobal_api.tls=true
