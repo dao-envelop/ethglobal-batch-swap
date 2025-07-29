@@ -14,12 +14,13 @@ services:
     environment:
      - NGINX_HOST=ethglobal.envelop.is
      - NGINX_PORT=8081
-     - APP_URL=/swapper
+     - APP_URL=/
     networks:
       - ci-server
     labels:
       - traefik.enable=true
-      - traefik.http.routers.ethglobal_frontend.rule=Host(`ethglobal.envelop.is`)  && Path(`/swapper`)
+      #- traefik.http.routers.ethglobal_frontend.rule=Host(`ethglobal.envelop.is`)  && Path(`/swapper`)
+      - traefik.http.routers.ethglobal_frontend.rule=Host(`ethglobal.envelop.is`) 
       - traefik.http.routers.ethglobal_frontend.entrypoints=websecure
       - traefik.http.routers.ethglobal_frontend.tls.certresolver=leresolver
       - traefik.http.routers.ethglobal_frontend.tls=true
