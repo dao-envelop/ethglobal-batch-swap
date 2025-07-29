@@ -45,6 +45,7 @@ jobs:
   deploy:
     name: Deploy docker
     runs-on: ubuntu-latest
+    timeout-minutes: 30 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -52,18 +53,18 @@ jobs:
       - name: Copy frontend to server
         uses: appleboy/scp-action@v0.1.3
         with:
-          host: ${{ secrets.SSH_HOST }}
+          host: ${{ secrets.SSH_HOST2 }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
+          key: ${{ secrets.SSH_KEY2 }}
           source: "frontend/*"
           target: "~/eth-global"
 
       - name: Build and run container on server
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST }}
+          host: ${{ secrets.SSH_HOST2 }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
+          key: ${{ secrets.SSH_KEY2 }}
           script: |
             cd ~/eth-global/frontend
             docker compose --profile stage down
