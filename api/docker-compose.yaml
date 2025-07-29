@@ -23,7 +23,7 @@ services:
       - traefik.http.routers.ethglobal_api.tls.certresolver=leresolver
       - traefik.http.routers.ethglobal_api.tls=true
       #- traefik.http.routers.ethglobal_frontend.middlewares=to-http
-      #- traefik.http.services.ethglobal_api-service.loadbalancer.server.port=8081
+      - traefik.http.services.ethglobal_api-service.loadbalancer.server.port=80
       #- traefik.http.middlewares.to-http.redirectscheme.scheme=http
 
   ethglobal-api-service-local:
