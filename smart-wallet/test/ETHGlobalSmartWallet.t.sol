@@ -6,7 +6,7 @@ import {ETHGlobalSmartWallet} from "../src/ETHGlobalSmartWallet.sol";
 
 contract ETHGlobalSmartWalletTest is Test {
     ETHGlobalSmartWallet public impl;
-    address FACTORY;  //dummy
+    address FACTORY; //dummy
 
     function setUp() public {
         impl = new ETHGlobalSmartWallet(FACTORY);
@@ -14,7 +14,7 @@ contract ETHGlobalSmartWalletTest is Test {
 
     function test_init() public {
         assertEq(impl.TOKEN_ID(), 1);
-        assertEq(impl.name(), 'ETHGlobal Smart Wallet');
-        assertEq(impl.symbol(), 'ETHGLW');
+        assertEq(impl.name(), "ETHGlobal Smart Wallet");
+        assertEq(impl.symbol(), "ETHGLW");
     }
 }
