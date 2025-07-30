@@ -59,7 +59,7 @@ jobs:
           source: "frontend/*"
           target: "~/eth-global"
 
-      - name: Build and run container on server
+      - name: Build and run frontend container on server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST2 }}
@@ -68,7 +68,7 @@ jobs:
           script: |
             cd ~/eth-global/frontend
             docker compose --profile stage down
-            docker compose --profile stage up -d
+            docker compose --profile stage up --build -d
 
   deploy-api:
     name: Deploy Api in docker
@@ -87,7 +87,7 @@ jobs:
           source: "api/*"
           target: "~/eth-global"
 
-      - name: Build and run container on server
+      - name: Build and run api container on server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST2 }}
@@ -96,4 +96,4 @@ jobs:
           script: |
             cd ~/eth-global/api
             docker compose --profile stage down
-            docker compose --profile stage up -d
+            docker compose --profile stage up --build -d
