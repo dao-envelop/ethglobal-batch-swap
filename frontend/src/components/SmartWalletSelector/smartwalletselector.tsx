@@ -96,9 +96,6 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 
 	const [ WNFTFactoryAddress,              setWNFTFactoryAddress              ] = useState('');
 
-	const [ inputCustomWalletParams,         setInputCustomWalletParams         ] = useState(false);
-	const [ inputWalletName,                 setInputWalletName                 ] = useState('');
-	const [ inputWalletSymbol,               setInputWalletSymbol               ] = useState('');
 	const [ inputHideSmallAmounts,           setInputHideSmallAmounts           ] = useState(JSON.parse(localStorageGet('hidesmallamounts') || 'false'));
 
 	const [ noWallets,                       setNoWallets                       ] = useState(false);
@@ -193,13 +190,9 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 
 		setLoading('Waiting for wallet');
 
-		let params: { name?: string, symbol?: string } = {};
-		if ( inputCustomWalletParams && inputWalletSymbol !== '' ) { params = { ...params, symbol: inputWalletSymbol } }
-		if ( inputCustomWalletParams && inputWalletName   !== '' ) { params = { ...params, name: inputWalletName     } }
-
 		let txResp;
 		try {
-			txResp = await createSmartWallet(_web3, smartWalletContract, _userAddress, params);
+			txResp = await createSmartWallet(_web3, smartWalletContract, _userAddress);
 		} catch(e: any) {
 			setModal({
 				type: _ModalTypes.error,
@@ -226,23 +219,15 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 					chainId: currentChain?.chainId,
 					userAddress: userAddress,
 					contractAddress: txResp.events.Initialized.address,
-					name: inputWalletName,
-					symbol: inputWalletSymbol,
 				}
 			]
 		));
-
-		setInputCustomWalletParams(false);
-		setInputWalletName('');
-		setInputWalletSymbol('');
 
 		unsetModal();
 		const smartWalletsUpdated = [
 			...userSmartWallets.filter((item) => { return item.contractAddress.toLowerCase() !== txResp.events.Initialized.address.toLowerCase() }),
 			{
 				contractAddress: txResp.events.Initialized.address,
-				name: inputWalletName,
-				symbol: inputWalletSymbol,
 			}
 		];
 		if ( onWalletListChange ) { onWalletListChange(smartWalletsUpdated); }
@@ -261,8 +246,6 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 							userSmartWallets,
 							{
 								contractAddress: txResp.events.Initialized.address,
-								name: params.name,
-								symbol: params.symbol,
 							}
 						);
 					}
@@ -392,68 +375,6 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 			</div>
 		)
 	}
-	const getWalletParams = () => {
-		return (
-			<>
-			<div className="input-group mt-5 mb-1">
-			<label className="checkbox">
-				<input
-					type="checkbox"
-					name=""
-					checked={ inputCustomWalletParams }
-					onChange={(e) => {
-						setInputCustomWalletParams(e.target.checked);
-					}}
-				/>
-				<span className="check"> </span>
-				<span className="check-text">
-					Custom wallet params
-				</span>
-			</label>
-			</div>
-			{
-				inputCustomWalletParams ? (
-					<>
-					<div className="input-group mt-3 mb-3">
-						<label className="input-label">
-							Wallet symbol
-							<TippyWrapper
-								msg="Shortcode of wNFT which will be minted for smart wallet"
-								elClass="ml-1"
-							></TippyWrapper>
-						</label>
-						<div className="select-group">
-							<input
-								className="input-control"
-								type="text"
-								value={ inputWalletSymbol }
-								onChange={(e) => {
-									setInputWalletSymbol(e.target.value);
-								}}
-							/>
-						</div>
-					</div>
-					<div className="input-group mb-3">
-						<label className="input-label">
-							Wallet name
-						</label>
-						<div className="select-group">
-							<input
-								className="input-control"
-								type="text"
-								value={ inputWalletName }
-								onChange={(e) => {
-									setInputWalletName(e.target.value);
-								}}
-							/>
-						</div>
-					</div>
-					</>
-				) : null
-			}
-			</>
-		)
-	}
 
 	if ( !currentChain ) { return null; }
 
@@ -526,7 +447,6 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 				}
 
 					{ getCopyBtn() }
-					{ getWalletParams() }
 
 					<div className="d-inline-block mr-2 my-3">
 						<button
