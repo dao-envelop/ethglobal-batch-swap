@@ -5,8 +5,13 @@ pragma solidity ^0.8.30;
 
 import "@Uopenzeppelin/contracts/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts/interfaces/IERC4906.sol";
+import "./Wallet.sol";
 
-contract ETHGlobalSmartWallet is ERC721Upgradeable, IERC4906{
+contract ETHGlobalSmartWallet is 
+   Wallet, 
+   ERC721Upgradeable, 
+   IERC4906
+{
     using Strings for uint256;
     using Strings for uint160;
 
@@ -20,8 +25,67 @@ contract ETHGlobalSmartWallet is ERC721Upgradeable, IERC4906{
         _ownerOrApproved(msg.sender);
         _;
     }
- 
-     /**
+    
+    
+    /**
+     * @dev Use this method for interact any dApps onchain
+     * @param _target address of dApp smart contract
+     * @param _value amount of native token in tx(msg.value)
+     * @param _data ABI encoded transaction payload
+     */
+    function executeEncodedTx(
+        address _target,
+        uint256 _value,
+        bytes memory _data
+    ) 
+        external 
+        onlyWalletKeeper()
+        returns (bytes memory r) 
+    {
+        r = _executeEncodedTx(_target, _value, _data);
+    }
+
+
+    /**
+     * @dev Use this method for interact any dApps onchain, executing as one batch
+     * @param _targetArray addressed of dApp smart contract
+     * @param _valueArray amount of native token in every tx(msg.value)
+     * @param _dataArray ABI encoded transaction payloads
+     */
+    function executeEncodedTxBatch(
+        address[] calldata _targetArray,
+        uint256[] calldata _valueArray,
+        bytes[] memory _dataArray
+    ) 
+        external 
+        onlyWalletKeeper() 
+        returns (bytes[] memory r) 
+    {
+    
+        r = _executeEncodedTxBatch(_targetArray, _valueArray, _dataArray);
+    }
+
+   
+
+    function name() public pure override returns (string memory) {
+        return nftName;
+    } 
+
+    function symbol() public pure override returns (string memory) {
+        return nftSymbol;
+    } 
+
+    function supportsInterface(bytes4 interfaceId) 
+        public 
+        view 
+        virtual  
+        override(ERC721Upgradeable, ERC1155HolderUpgradeable, IERC165) 
+        returns (bool) 
+    {
+        //TODO  add current contract interface
+       return  super.supportsInterface(interfaceId);
+    }  
+    /**
      * @dev Base URI for computing {tokenURI}. If set, the resulting URI for each
      * token will be the concatenation of the `baseURI` and the `tokenId`. Empty
      * by default, can be overridden in child contracts.
