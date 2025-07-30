@@ -18,15 +18,14 @@ contract ETHGlobalSmartWalletTest is Test {
         impl = new ETHGlobalSmartWallet(address(factory));
         ETHGlobalSmartWallet.InitParams memory initData = ETHGlobalSmartWallet.InitParams(
             address(this),
-            'ETHGlobal Smart Wallet',
-            'ETHGLW',
-            'https://apidev.envelop.is/meta/',
+            "ETHGlobal Smart Wallet",
+            "ETHGLW",
+            "https://apidev.envelop.is/meta/",
             new address[](0),
             new bytes32[](0),
             new uint256[](0),
             ""
         );
-
         walletAddress = payable(impl.createWalletOnFactory(initData));
         wallet = ETHGlobalSmartWallet(walletAddress);
     }
@@ -45,7 +44,7 @@ contract ETHGlobalSmartWalletTest is Test {
         vm.expectEmit();
         emit Wallet.EtherReceived(sendEtherAmount, sendEtherAmount, address(this));
         (bool sent, bytes memory data) = walletAddress.call{value: sendEtherAmount}("");
-        // suppress solc warnings 
+        // suppress solc warnings
         sent;
         data;
         assertEq(walletAddress.balance, sendEtherAmount);
@@ -54,10 +53,9 @@ contract ETHGlobalSmartWalletTest is Test {
         address ethReceiver = address(2);
         vm.prank(address(this));
         vm.expectEmit();
-        emit Wallet.EtherBalanceChanged(sendEtherAmount, sendEtherAmount / 2, 0 , address(this));
-        wallet.executeEncodedTx(ethReceiver, sendEtherAmount / 2, data); 
+        emit Wallet.EtherBalanceChanged(sendEtherAmount, sendEtherAmount / 2, 0, address(this));
+        wallet.executeEncodedTx(ethReceiver, sendEtherAmount / 2, data);
         assertEq(ethReceiver.balance, sendEtherAmount / 2);
-        assertEq(walletAddress.balance,sendEtherAmount / 2);
-
+        assertEq(walletAddress.balance, sendEtherAmount / 2);
     }
 }
