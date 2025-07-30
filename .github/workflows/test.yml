@@ -59,7 +59,7 @@ jobs:
           source: "frontend/*"
           target: "~/eth-global"
 
-      - name: Build and run container on server
+      - name: Build and run frontend container on server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST2 }}
@@ -87,7 +87,7 @@ jobs:
           source: "api/*"
           target: "~/eth-global"
 
-      - name: Build and run container on server
+      - name: Build and run api container on server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST2 }}
