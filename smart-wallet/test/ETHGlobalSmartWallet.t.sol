@@ -8,9 +8,10 @@ import {Wallet} from "../src/Wallet.sol";
 
 contract ETHGlobalSmartWalletTest is Test {
     ETHGlobalSmartWallet public impl;
+    address FACTORY;  //dummy
 
     function setUp() public {
-        impl = new ETHGlobalSmartWallet();
+        impl = new ETHGlobalSmartWallet(FACTORY);
     }
 
     function test_init() public {
