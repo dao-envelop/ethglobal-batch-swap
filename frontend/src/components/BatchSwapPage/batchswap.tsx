@@ -8,6 +8,7 @@ import React, {
 import {
 	_AdvancedLoadingStatus,
 	_ModalTypes,
+	AdvancedLoaderStageType,
 	ERC20Context,
 	InfoModalContext,
 	Web3Context,
@@ -25,6 +26,7 @@ import {
 	localStorageGet,
 	removeThousandSeparator,
 	tokenToFloat,
+	tokenToInt,
 	Web3
 } from "@envelop/envelop-client-core";
 
@@ -35,7 +37,12 @@ import CoinSelector from "../CoinSelector";
 import icon_i_del   from '../../static/pics/i-del.svg';
 import icon_loading from '../../static/pics/loading.svg';;
 
-import config        from '../../app.config.json';
+import config       from '../../app.config.json';
+import {
+	fetchAllowanceForToken,
+	getApprovalDataForToken,
+	getSwapDataForToken,
+} from "../../utils/oneinch";
 
 type ContentTokenRowType = {
 	address: string,
@@ -561,11 +568,7 @@ export default function BatchSwap() {
 
 		return ( <div className="alert alert-error mt-3">{ swapError }</div> )
 	}
-	const filterERC20List = (permissions: {
-		enabledForCollateral?        : boolean,
-		enabledForFee?               : boolean,
-		enabledRemoveFromCollateral? : boolean,
-	}): Array<ERC20Type> => {
+	const filterERC20List = (): Array<ERC20Type> => {
 		if ( currentChain ) {
 			return [
 				chainTypeToERC20(currentChain),
@@ -609,7 +612,7 @@ export default function BatchSwap() {
 									}}
 								/>
 								<CoinSelector
-									tokens        = { filterERC20List({ enabledForFee: true }) }
+									tokens        = { filterERC20List() }
 									selectedToken = { inputContentTokenAddress }
 									onChange      = {(address: string) => {
 										setInputContentTokenAddress(address);
@@ -681,116 +684,231 @@ export default function BatchSwap() {
 		)
 	}
 
-	const swapSubmit = async (_currentChain: ChainType, _web3: Web3, _userAddress: string, isMultisig?: boolean) => {
+	const createAdvancedLoaderCreate = (_currentChain: ChainType, _web3: Web3, _userAddress: string) => {
 
-	// 	if ( odosRouterAddress === '' ) {
-	// 		setModal({
-	// 			type: _ModalTypes.error,
-	// 			title: `Cannot fetch router address`,
-	// 			text: [{ text: 'Try to change geolocation' }],
-	// 			details: [
-	// 				`Stage: preparetx_swap`,
-	// 				`User address: ${_userAddress}`,
-	// 				`Wallet address: ${walletToUse}`,
-	// 				// `Smart wallet balances: ${JSON.stringify(ERC20Balances.filter((item) => { return item.walletAddress.toLowerCase() === walletToUse.toLowerCase() }))}`,
-	// 				`Content tokens: ${JSON.stringify(contentTokens)}`,
-	// 			]
-	// 		});
-	// 		return;
-	// 	}
+		const loaderStages: Array<AdvancedLoaderStageType> = []
 
-	// 	createAdvancedLoaderCreate(_currentChain, _web3, _userAddress);
+		loaderStages.push({
+			id: 'preparetx_approve',
+			sortOrder: 10,
+			text: 'Approve source token',
+			status: _AdvancedLoadingStatus.queued
+		});
 
-	// 	const initialBalances: Array<ERC20Balance> = ERC20Balances
-	// 		.filter((item) => { return item.walletAddress.toLowerCase() === walletToUse.toLowerCase() })
-	// 		.map((item) => { return item.balance })
+		loaderStages.push({
+			id: 'preparetx_swap',
+			sortOrder: 20,
+			text: 'Prepare batch of txs: swap tokens',
+			total: contentTokens.length,
+			status: _AdvancedLoadingStatus.queued
+		});
+		loaderStages.push({
+			id: 'executetx_swap',
+			sortOrder: 21,
+			text: `Executing batch of swaps`,
+			status: _AdvancedLoadingStatus.queued
+		});
 
-	// 	try { await transferCheckoutTokensToMaster(_currentChain, _web3, _userAddress, isMultisig); } catch(ignored) { return; }
+		const advLoader = {
+			title: 'Waiting to swap',
+			stages: loaderStages
+		};
+		createAdvancedLoader(advLoader);
 
-	// 	let txBatch: Array<{ target: Array<string>, value: Array<string>, data: Array<string> }> = [];
-	// 	try {
-	// 		const approveTx = await preparetx_approve(_currentChain, _web3, _userAddress, isMultisig);
-	// 		if ( approveTx ) { txBatch.push(approveTx) }
-	// 	} catch (ignored) { return; }
-	// 	try {
-	// 		const createIndexTx = await preparetx_createindex(_currentChain, _web3, _userAddress, isMultisig);
-	// 		txBatch.push(createIndexTx)
-	// 	} catch (ignored) { return; }
+	}
+	const preparetx_approve = async (_currentChain: ChainType, _web3: Web3, _userAddress: string) => {
 
-	// 	try {
-	// 		const swapTx = await preparetx_swap(_currentChain, _web3, _userAddress, isMultisig);
-	// 		txBatch = [
-	// 			...txBatch,
-	// 			...swapTx
-	// 		]
-	// 	} catch (ignored) { return; }
+		if ( inputCheckoutTokenAddress === '0x0000000000000000000000000000000000000000' ) {
+			updateStepAdvancedLoader({
+				id: 'preparetx_approve',
+				status: _AdvancedLoadingStatus.complete,
+			});
+			return;
+		}
+		updateStepAdvancedLoader({
+			id: 'preparetx_approve',
+			text: 'Approve source token. Prepare tx',
+			status: _AdvancedLoadingStatus.loading,
+		});
 
-	// 	let createAndSwapResp: any;
-	// 	try {
-	// 		createAndSwapResp = await executeTxs_create(txBatch, _currentChain, _web3, _userAddress, isMultisig);
-	// 		console.log('createAndSwapResp', createAndSwapResp);
-	// 	} catch (ignored) { return; }
+		let foundCheckoutERC20 = erc20List.find((item) => { return item.contractAddress.toLowerCase() === inputCheckoutTokenAddress.toLowerCase() });
+		if ( !foundCheckoutERC20 ) {
+			foundCheckoutERC20 = getNullERC20(inputCheckoutTokenAddress);
+		}
 
-	// 	let txBatchTransfer: Array<{ target: Array<string>, value: Array<string>, data: Array<string> }> = [];
-	// 	try {
-	// 		const transferTx = await preparetx_transfer(createAndSwapResp, initialBalances, _currentChain, _web3, _userAddress, isMultisig);
-	// 		txBatchTransfer = [
-	// 			...txBatchTransfer,
-	// 			...transferTx
-	// 		]
-	// 	} catch (e: any) {
-	// 		console.log('Cannot prepare transfer', e);
-	// 		return;
-	// 	}
+		let approveTx;
+		const amountToCheck = tokenToInt(new BigNumber(inputCheckoutTokenAmount), foundCheckoutERC20.decimals);
 
-	// 	let transferResp: any;
-	// 	try {
-	// 		transferResp = await executeTxs_transfer(txBatchTransfer, _currentChain, _web3, _userAddress, isMultisig)
-	// 		console.log('transferResp', transferResp);
-	// 	} catch (e: any) {
-	// 		console.log('Cannot execute transfer', e);
-	// 		return;
-	// 	}
+		try {
+			const allowance = await fetchAllowanceForToken(_currentChain.chainId, inputCheckoutTokenAddress, walletToUse);
+			console.log('allowance', allowance.toString());
+			if ( allowance.lt(amountToCheck) ) {
+				approveTx = await getApprovalDataForToken(_currentChain.chainId, inputCheckoutTokenAddress, amountToCheck);
+				console.log('approveTx', approveTx);
+			}
+		} catch(e: any) {
+			setModal({
+				type: _ModalTypes.error,
+				title: `Cannot get approve calldata for ${foundCheckoutERC20.symbol}`,
+				details: [
+					`Stage: preparetx_approve`,
+					`Token ${foundCheckoutERC20.symbol}: ${foundCheckoutERC20.contractAddress}`,
+					`User address: ${_userAddress}`,
+					`Wallet address: ${walletToUse}`,
+					`Error: ${e}`
+				]
+			});
+			throw new Error();
+		}
 
-	// 	updateAllBalances(_userAddress);
-	// 	updateAllBalances(walletToUse);
+		updateStepAdvancedLoader({
+			id: 'preparetx_approve',
+			text: 'Approve source token. Send tx'
+		});
 
-	// 	let indexLinks: Array<Array<{ text: string, url : string }>> = [];
-	// 	const eventInit = await getEventFromTx(_currentChain.chainId, createAndSwapResp, 'initialized', WNFTV2IndexAddress, 'wnftv2index');
-	// 	if ( eventInit ) {
-	// 		indexLinks = eventInit.map((item) => {
-	// 			return [{
-	// 				text: `View index ${compactString(item.address)}/1`, url: `https://${window.location.hostname}/token/${_currentChain.chainId}/${item.address}/1`
-	// 			}]
-	// 		})
-	// 	}
+		// execute
 
-	// 	unsetModal();
+		updateStepAdvancedLoader({
+			id: 'preparetx_approve',
+			status: _AdvancedLoadingStatus.complete
+		});
+	}
+	const preparetx_swap = async (_currentChain: ChainType, _web3: Web3, _userAddress: string) => {
 
-	// 	setModal({
-	// 		type: _ModalTypes.success,
-	// 		title: `Transactions have been executed`,
-	// 		buttons: [{
-	// 			text: 'Ok',
-	// 			clickFunc: () => {
-	// 				unsetModal();
-	// 			}
-	// 		}],
-	// 		text: (
-	// 			<p>To see all your indexes go to <a href="/dashboard" target="_blank" rel="noopener noreferrer">dashboard</a></p>
-	// 		),
-	// 		links: [
-	// 			{
-	// 				text: `View swap tx on ${_currentChain.explorerName}`,
-	// 				url: combineURLs(_currentChain.explorerBaseUrl, `/tx/${createAndSwapResp?.transactionHash}`)
-	// 			},
-	// 			{
-	// 				text: `View transfer tx on ${_currentChain.explorerName}`,
-	// 				url: combineURLs(_currentChain.explorerBaseUrl, `/tx/${transferResp?.transactionHash}`)
-	// 			},
-	// 		],
-	// 		linkGroups: indexLinks
-	// 	});
+		updateStepAdvancedLoader({
+			id: 'preparetx_approve',
+			text: 'Approve source token. Prepare tx',
+			status: _AdvancedLoadingStatus.loading,
+		});
+
+		const txs = [];
+		let foundCheckoutERC20 = erc20List.find((item) => { return item.contractAddress.toLowerCase() === inputCheckoutTokenAddress.toLowerCase() });
+		if ( !foundCheckoutERC20 ) {
+			foundCheckoutERC20 = getNullERC20(inputCheckoutTokenAddress);
+		}
+		const checkoutAmountParsed = tokenToInt(new BigNumber(inputCheckoutTokenAmount), foundCheckoutERC20.decimals);
+
+		for (let idx = 0; idx < contentTokens.length; idx++) {
+			const item = contentTokens[idx];
+
+			let foundERC20 = erc20List.find((iitem) => { return iitem.contractAddress.toLowerCase() === item.address.toLowerCase() });
+			if ( !foundERC20 ) {
+				foundERC20 = getNullERC20(item.address);
+			}
+
+			updateStepAdvancedLoader({
+				id: 'preparetx_approve',
+				text: `Approve source token. Prepare tx for (${foundERC20.symbol})`,
+				status: _AdvancedLoadingStatus.loading,
+				current: idx+1,
+			});
+
+			const percentParsed = new BigNumber(item.percent).dividedBy(100);
+			const amountToCheck = checkoutAmountParsed.multipliedBy(percentParsed);
+
+			try {
+				const tx = await getSwapDataForToken(_currentChain.chainId, inputCheckoutTokenAddress, item.address, amountToCheck, walletToUse);
+				if ( tx ) { txs.push(tx); }
+			} catch(e: any) {
+				setModal({
+					type: _ModalTypes.error,
+					title: `Cannot get swap calldata for ${foundCheckoutERC20.symbol}`,
+					details: [
+						`Stage: preparetx_approve`,
+						`Token ${foundCheckoutERC20.symbol}: ${foundCheckoutERC20.contractAddress}`,
+						`User address: ${_userAddress}`,
+						`Wallet address: ${walletToUse}`,
+						`Error: ${e}`
+					]
+				});
+				throw new Error();
+			}
+
+		}
+
+		updateStepAdvancedLoader({
+			id: 'preparetx_approve',
+			text: `Approve source token. Prepare tx`,
+			status: _AdvancedLoadingStatus.complete,
+			current: contentTokens.length,
+		});
+
+		return txs;
+	}
+	const executeTxs_swap = async (txs: Array<{ target: Array<string>, value: Array<string>, data: Array<string> }>, _currentChain: ChainType, _web3: Web3, _userAddress: string) => {
+
+		updateStepAdvancedLoader({
+			id: 'executetx_swap',
+			status: _AdvancedLoadingStatus.loading,
+		});
+
+		let txResp: any;
+		try {
+			// txResp = await executeTxBatch(_web3, walletToUse, _userAddress, txs);
+		} catch(e: any) {
+			setModal({
+				type: _ModalTypes.error,
+				title: `Cannot create index`,
+				details: [
+					`Stage: executeTxs_create`,
+					`User address: ${_userAddress}`,
+					`Wallet address: ${walletToUse}`,
+					'',
+					e.message || e,
+				]
+			});
+			throw new Error();
+		}
+
+		updateStepAdvancedLoader({
+			id: 'executetx_swap',
+			status: _AdvancedLoadingStatus.complete
+		});
+
+		return txResp;
+	}
+	const swapSubmit = async (_currentChain: ChainType, _web3: Web3, _userAddress: string) => {
+
+		createAdvancedLoaderCreate(_currentChain, _web3, _userAddress);
+
+		try { await preparetx_approve(_currentChain, _web3, _userAddress); } catch (ignored) { return; }
+
+		let txBatch: Array<{ target: Array<string>, value: Array<string>, data: Array<string> }> = [];
+		try {
+			const swapTx = await preparetx_swap(_currentChain, _web3, _userAddress);
+			txBatch = [
+				...txBatch,
+				...swapTx
+			]
+		} catch (ignored) { return; }
+
+		let swapResp: any;
+		try {
+			swapResp = await executeTxs_swap(txBatch, _currentChain, _web3, _userAddress);
+			console.log('swapResp', swapResp);
+		} catch (ignored) { return; }
+
+		updateAllBalances(_userAddress);
+		updateAllBalances(walletToUse);
+
+		unsetModal();
+
+		setModal({
+			type: _ModalTypes.success,
+			title: `Transactions have been executed`,
+			buttons: [{
+				text: 'Ok',
+				clickFunc: () => {
+					unsetModal();
+				}
+			}],
+			links: [
+				{
+					text: `View swap tx on ${_currentChain.explorerName}`,
+					url: combineURLs(_currentChain.explorerBaseUrl, `/tx/${swapResp?.transactionHash}`)
+				},
+			],
+		});
 	}
 	const getSubmitBtn = () => {
 
@@ -825,7 +943,7 @@ export default function BatchSwap() {
 							(checkoutTokenBlockRef.current as any).scrollIntoView();
 						}
 					}}
-				>Create</button>
+				>Swap</button>
 			)
 		}
 
@@ -883,8 +1001,7 @@ export default function BatchSwap() {
 					}
 
 					if ( !_web3 || !_userAddress || !_currentChain ) { return; }
-					const isMultisig = localStorageGet('authMethod').toLowerCase() === 'safe';
-					swapSubmit(_currentChain, _web3, _userAddress, isMultisig);
+					swapSubmit(_currentChain, _web3, _userAddress);
 				}}
 			>Swap</button>
 		)
@@ -900,19 +1017,6 @@ export default function BatchSwap() {
 					setWalletToUse(wallet);
 				}}
 				showError={ showError && walletToUse === '' }
-				callbackAfterCreate={(wallets, created) => {
-					if ( !wallets.length ) {
-						setInfo(
-							'To create indexes:',
-							[
-								'1. Define the underlying asset and the amount  to use to create an indexes',
-								'2. Fill in the count of indexes to create',
-								'3. Collect list of the assets with the proportions which indexes will have inside',
-								'4. Press Create button and sign the transaction',
-							]
-						)
-					}
-				}}
 			/>
 
 			{ getCheckoutSumBlock() }

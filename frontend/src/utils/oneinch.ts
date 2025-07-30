@@ -4,7 +4,7 @@ import {
 	combineURLs
 } from "@envelop/envelop-client-core"
 
-export const fetchApprovalForToken = async (chainId: number, tokenAddress: string, walletAddress: string): Promise<BigNumber> => {
+export const fetchAllowanceForToken = async (chainId: number, tokenAddress: string, walletAddress: string): Promise<BigNumber> => {
 
 	const BASE_URL = process.env.REACT_APP_PROXY_API_BASE_URL;
 	if ( !BASE_URL ) {
@@ -22,11 +22,11 @@ export const fetchApprovalForToken = async (chainId: number, tokenAddress: strin
 			respParsed = await resp.json();
 		}
 	} catch (e) {
-		console.log('Cannot load quote', e);
+		console.log('Cannot load allowance', e);
 	}
 
 	if ( !respParsed ) {
-		console.log('Cannot load quote');
+		console.log('Cannot load allowance');
 	}
 
 	return new BigNumber(respParsed.allowance);
@@ -50,11 +50,11 @@ export const getApprovalDataForToken = async (chainId: number, tokenAddress: str
 			respParsed = await resp.json();
 		}
 	} catch (e) {
-		console.log('Cannot load quote', e);
+		console.log('Cannot load approve calldata', e);
 	}
 
 	if ( !respParsed ) {
-		console.log('Cannot load quote');
+		console.log('Cannot load approve calldata');
 	}
 
 	return respParsed;
@@ -79,11 +79,11 @@ export const getSwapDataForToken = async (chainId: number, fromTokenAddress: str
 			respParsed = await resp.json();
 		}
 	} catch (e) {
-		console.log('Cannot load quote', e);
+		console.log('Cannot load swap calldata', e);
 	}
 
 	if ( !respParsed ) {
-		console.log('Cannot load quote');
+		console.log('Cannot load swap calldata');
 	}
 
 	return respParsed;
