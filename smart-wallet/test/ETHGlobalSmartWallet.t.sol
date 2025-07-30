@@ -12,8 +12,9 @@ contract ETHGlobalSmartWalletTest is Test {
         impl = new ETHGlobalSmartWallet(FACTORY);
     }
 
-    function test_TOKEN_ID() public view {
+    function test_init() public {
         assertEq(impl.TOKEN_ID(), 1);
+        assertEq(impl.name(), 'ETHGlobal Smart Wallet');
+        assertEq(impl.symbol(), 'ETHGLW');
     }
-
 }
