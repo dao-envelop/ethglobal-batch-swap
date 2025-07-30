@@ -6,13 +6,14 @@ import {ETHGlobalSmartWallet} from "../src/ETHGlobalSmartWallet.sol";
 
 contract ETHGlobalSmartWalletScript is Script {
     ETHGlobalSmartWallet public impl;
+     address FACTORY;  //dummy
 
     function setUp() public {}
 
     function run() public {
         vm.startBroadcast();
 
-        impl = new ETHGlobalSmartWallet();
+        impl = new ETHGlobalSmartWallet(FACTORY);
 
         vm.stopBroadcast();
     }
