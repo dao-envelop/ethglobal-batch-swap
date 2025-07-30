@@ -96,4 +96,4 @@ jobs:
           script: |
             cd ~/eth-global/api
             docker compose --profile stage down
-            docker compose --profile stage up -d
+            docker compose --profile stage up --build -d
