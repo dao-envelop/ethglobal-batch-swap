@@ -84,7 +84,8 @@ contract ETHGlobalSmartWallet is
     {
         //TODO  add current contract interface
        return  super.supportsInterface(interfaceId);
-    }  
+    } 
+
     /**
      * @dev Base URI for computing {tokenURI}. If set, the resulting URI for each
      * token will be the concatenation of the `baseURI` and the `tokenId`. Empty
