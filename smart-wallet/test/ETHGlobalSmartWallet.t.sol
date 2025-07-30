@@ -9,16 +9,10 @@ contract ETHGlobalSmartWalletTest is Test {
 
     function setUp() public {
         impl = new ETHGlobalSmartWallet();
-        //impl.setNumber(0);
     }
 
-    // function test_Increment() public {
-    //     impl.increment();
-    //     assertEq(impl.number(), 1);
-    // }
+    function test_TOKEN_ID() public {
+        assertEq(impl.TOKEN_ID(), 1);
+    }
 
-    // function testFuzz_SetNumber(uint256 x) public {
-    //     impl.setNumber(x);
-    //     assertEq(impl.number(), x);
-    // }
 }
