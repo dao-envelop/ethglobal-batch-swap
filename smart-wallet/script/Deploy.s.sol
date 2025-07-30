@@ -8,7 +8,7 @@ import {WalletFactory} from "../src/WalletFactory.sol";
 contract ETHGlobalSmartWalletScript is Script {
     ETHGlobalSmartWallet public impl;
     WalletFactory public factory;
-     address FACTORY;  //dummy
+    address FACTORY; //dummy
 
     function setUp() public {}
 

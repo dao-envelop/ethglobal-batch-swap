@@ -9,9 +9,9 @@ import {Wallet} from "../src/Wallet.sol";
 
 contract ETHGlobalSmartWalletTest is Test {
     ETHGlobalSmartWallet public impl;
-    WalletFactory factory;
+    WalletFactory public factory;
+    ETHGlobalSmartWallet public wallet;
     address payable walletAddress;
-    ETHGlobalSmartWallet wallet;
 
     function setUp() public {
         factory = new WalletFactory();
@@ -34,8 +34,8 @@ contract ETHGlobalSmartWalletTest is Test {
     function test_init() public {
         assertEq(wallet.ownerOf(impl.TOKEN_ID()), address(this));
         assertEq(impl.TOKEN_ID(), 1);
-        assertEq(impl.name(), 'ETHGlobal Smart Wallet');
-        assertEq(impl.symbol(), 'ETHGLW');
+        assertEq(impl.name(), "ETHGlobal Smart Wallet");
+        assertEq(impl.symbol(), "ETHGLW");
     }
 
     function test_send_eth() public {
