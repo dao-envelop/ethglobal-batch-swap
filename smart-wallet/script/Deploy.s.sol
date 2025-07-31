@@ -5,7 +5,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {ETHGlobalSmartWallet} from "../src/ETHGlobalSmartWallet.sol";
 import {WalletFactory} from "../src/WalletFactory.sol";
 
-contract ETHGlobalSmartWalletScript is Script {
+contract ETHGlobalSmartWalletDeployScript is Script {
     ETHGlobalSmartWallet public impl;
     WalletFactory public factory;
     address FACTORY; //dummy

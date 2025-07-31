@@ -22,7 +22,7 @@ services:
       - traefik.http.routers.ethglobal_api.entrypoints=websecure
       - traefik.http.routers.ethglobal_api.tls.certresolver=leresolver
       - traefik.http.routers.ethglobal_api.tls=true
-      #- traefik.http.routers.ethglobal_frontend.middlewares=to-http
+      - traefik.http.routers.ethglobal_api.middlewares=cors
       - traefik.http.services.ethglobal_api-service.loadbalancer.server.port=80
       #- traefik.http.middlewares.to-http.redirectscheme.scheme=http
 
