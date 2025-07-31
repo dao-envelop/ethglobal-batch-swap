@@ -166,4 +166,25 @@ contract ETHGlobalSmartWalletTest is Test {
         vm.expectRevert();
         wallet.initialize(initData);
     }
+
+    function test_different_data_arrays() public {
+        address[] memory targets = new address[](2);
+        bytes[] memory dataArray = new bytes[](2);
+        uint256[] memory values = new uint256[](1);
+        address receiver = address(2);
+        targets[0] = address(erc20_1);
+        targets[1] = address(erc20_2);
+        values[0] = 0;
+        dataArray[0] = "";
+        dataArray[1] = "";
+        vm.expectRevert(abi.encodeWithSelector(Wallet.DifferentArraysLength.selector, 2, 1));
+        wallet.executeEncodedTxBatch(targets, values, dataArray);
+        bytes[] memory dataArrayNew = new bytes[](1);
+        uint256[] memory valuesNew = new uint256[](2);
+        dataArrayNew[0] = "";
+        valuesNew[0] = 0;
+        valuesNew[1] = 0;
+        vm.expectRevert(abi.encodeWithSelector(Wallet.DifferentArraysLength.selector, 2, 1));
+        wallet.executeEncodedTxBatch(targets, valuesNew, dataArrayNew);
+    }
 }
