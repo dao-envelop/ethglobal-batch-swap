@@ -1,4 +1,4 @@
-
+import logging
 import os
 import json
 import urllib
@@ -6,6 +6,14 @@ import urllib
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import Response, FileResponse
 from starlette.status import HTTP_400_BAD_REQUEST
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+)
+
+logger = logging.getLogger(__name__)
+
 
 API_1INCH_TOKEN = os.environ.get('API_1INCH_TOKEN', None)
 API_1INCH_BASE_URL = os.environ.get('API_1INCH_BASE_URL', None)
@@ -68,6 +76,7 @@ def swapproxy(
         resp = urllib.request.urlopen(req)
         data = resp.read()
         info = resp.info()
+        logger.debug('response: {}'.format(data))
         return Response( content=data, media_type=info.get_content_type() )
     except urllib.error.HTTPError as e:
         return Response(status_code=e.code, media_type='application/json', content=e.fp.read().decode('utf-8'))
@@ -107,7 +116,7 @@ def wallets(
         resp = urllib.request.urlopen(req)
         data = resp.read()
         data_parsed = json.loads(data)
-
+        
         found_wallets = list(filter(lambda x: x['name'].lower() == WALLET_NAME.lower(), data_parsed['assets']))
 
         return found_wallets
