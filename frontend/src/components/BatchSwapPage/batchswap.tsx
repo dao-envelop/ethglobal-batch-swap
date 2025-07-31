@@ -46,6 +46,10 @@ import {
 	getRouterAddress,
 	getSwapDataForToken,
 } from "../../utils/oneinch";
+import {
+	getSmartWalletBalances
+} from "../../utils/smartwallets";
+import InputWithOptions from "../InputWithOptions";
 
 type ContentTokenRowType = {
 	address: string,
@@ -91,6 +95,7 @@ export default function BatchSwap() {
 	const [ inputCheckoutTokenAddress,       setInputCheckoutTokenAddress       ] = useState('');
 	const [ inputCheckoutTokenAmount,        setInputCheckoutTokenAmount        ] = useState('');
 	const [ supportedCheckoutTokens,         setSupportedCheckoutTokens         ] = useState<Array<string>>([]);
+	const [ userTokens,                      setUserTokens                      ] = useState<Array<{ walletAddress: string, tokenAddress: string, amount: BigNumber }>>([]);
 
 	const [ inputContentTokenAddress,        setInputContentTokenAddress        ] = useState('');
 	const [ contentTokens,                   setContentTokens                   ] = useState<Array<ContentTokenRowType>>([]);
@@ -116,17 +121,27 @@ export default function BatchSwap() {
 			.catch(() => { setSwapRouterAddress('') })
 
 	}, [ currentChain ]);
+	useEffect(() => {
+
+		if ( !currentChain ) { return; }
+		if ( !userAddress ) { return; }
+
+		getSmartWalletBalances(currentChain.chainId, userAddress)
+			.then((data) => { setUserTokens(data) })
+			.catch(() => { setUserTokens([]) })
+
+	}, [ currentChain, userAddress ]);
 
 	const getCheckoutSumBlock = () => {
 
 		if ( !currentChain ) { return null; }
 
-		const tokensToRender = supportedCheckoutTokens.map((item) => {
-			if ( currentChain && item === '0x0000000000000000000000000000000000000000' ) { return chainTypeToERC20(currentChain); }
-			const foundERC20 = erc20List.find((iitem) => { return iitem.contractAddress.toLowerCase() === item.toLowerCase() });
+		const tokensToRender = userTokens.map((item) => {
+			if ( currentChain && item.tokenAddress === '0x0000000000000000000000000000000000000000' ) { return chainTypeToERC20(currentChain); }
+			const foundERC20 = erc20List.find((iitem) => { return iitem.contractAddress.toLowerCase() === item.tokenAddress.toLowerCase() });
 			if ( !foundERC20 ) {
-				requestERC20Token(item);
-				return getNullERC20(item);
+				requestERC20Token(item.tokenAddress);
+				return getNullERC20(item.tokenAddress);
 			}
 			return foundERC20;
 		});
@@ -201,6 +216,36 @@ export default function BatchSwap() {
 				<div className="row">
 
 					<div className="col-md-6 pl-md-6">
+						<div className="input-group mb-3">
+							<label className="input-label">
+								Select API to swap
+							</label>
+							<InputWithOptions
+								value={ 'Classic swap' }
+								placeholder="Select API to swap"
+								onSelect={(e) => {
+								}}
+								options={
+									[
+										{
+											label: 'Classic swap',
+											value: 'Classic swap',
+										},
+										{
+											label: 'Fusion',
+											value: 'Fusion',
+											badge: 'Under construction',
+										},
+										{
+											label: 'Fusion+',
+											value: 'Fusion+',
+											badge: 'Under construction',
+										},
+									]
+								}
+								showArrow={ true }
+							/>
+						</div>
 						<div className="input-group mb-3" ref={ checkoutTokenBlockRef }>
 							<label className="input-label">
 								Address
@@ -571,15 +616,18 @@ export default function BatchSwap() {
 		return ( <div className="alert alert-error mt-3">{ swapError }</div> )
 	}
 	const filterERC20List = (): Array<ERC20Type> => {
-		if ( currentChain ) {
-			return [
-				chainTypeToERC20(currentChain),
-				...erc20List.filter((item) => { return !item.isSpam })
-			];
-		} else {
-			return erc20List.filter((item) => { return !item.isSpam });
-		}
-		// return erc20List;
+		const output = supportedCheckoutTokens.map((item) => {
+			if ( currentChain && item === '0x0000000000000000000000000000000000000000' ) { return chainTypeToERC20(currentChain); }
+
+			let foundERC20 = erc20List.find((iitem) => { return item.toLowerCase() === iitem.contractAddress.toLowerCase() });
+			if ( !foundERC20 ) {
+				requestERC20Token(item);
+				foundERC20 = getNullERC20(item);
+			}
+			return foundERC20;
+		});
+
+		return output;
 	}
 	const getContentTokensBlock = () => {
 
