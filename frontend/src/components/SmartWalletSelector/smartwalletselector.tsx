@@ -91,11 +91,13 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 
 	const [ smartWalletFactory,              setSmartWalletFactory              ] = useState('');
 	const [ userSmartWallets,                setUserSmartWallets                ] = useState<Array<SmartWalletType>>([]);
+	const [ smartWalletBalances,             setSmartWalletBalances             ] = useState<Array<{ walletAddress: string, tokenAddress: string, amount: BigNumber }>>([]);
+
 	const [ selectedWallet,                  setSelectedWallet                  ] = useState('');
 
 	const [ inputHideSmallAmounts,           setInputHideSmallAmounts           ] = useState(JSON.parse(localStorageGet('hidesmallamounts') || 'false'));
 
-	const [ noWallets,                       setNoWallets                       ] = useState(false);
+	const [ noWallets,                       setNoWallets                       ] = useState(true);
 
 	const [ copiedHint,                      setCopiedHint                      ] = useState(false);
 
@@ -122,52 +124,19 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 		setSelectedWallet('');
 		if ( onWalletListChange ) { onWalletListChange([]); }
 		setUserSmartWallets([]);
-		setNoWallets(false);
+		setNoWallets(true);
 		if ( onWalletSelect ) { onWalletSelect(''); }
-
-		const savedWallets: Array<SavedSmartWalletType> = JSON.parse(localStorageGet('savedsmartwallets') || '[]');
-		const savedWalletsCurrent: Array<SavedSmartWalletType> = savedWallets.filter((item) => {
-			return item.chainId === currentChain.chainId &&
-				item.userAddress === userAddress
-		});
 
 		getUserSmartWalletsFromAPI(currentChain.chainId, userAddress)
 			.then((data) => {
-
-				const savedWalletsFiltered: Array<SavedSmartWalletType> = savedWalletsCurrent.filter((item) => {
-					return !data.find((iitem: SmartWalletType) => {
-						return item.contractAddress.toLowerCase() === iitem.contractAddress.toLowerCase()
-					});
-				});
-				localStorageSet('savedsmartwallets', JSON.stringify(
-					savedWallets.filter((item) => {
-						if ( item.chainId !== currentChain.chainId ) { return true; }
-						if ( item.userAddress !== userAddress ) { return true; }
-						return !data.find((iitem: SmartWalletType) => { return item.contractAddress.toLowerCase() === iitem.contractAddress.toLowerCase() });
-					})
-				));
-
-				const walletList = [
-					...data,
-					...savedWalletsFiltered,
-				];
-
-				if ( !walletList.length ) {
-					setNoWallets(true);
-				} else {
-					if ( onWalletListChange ) { onWalletListChange(walletList); }
-					setUserSmartWallets(walletList);
+				if ( onWalletListChange ) { onWalletListChange(data); }
+				if ( data.length ) {
+					setNoWallets(false);
+					setUserSmartWallets(data);
 				}
 			})
 			.catch((e) => {
 				console.log('Cannot load user wallets', e);
-
-				if ( !savedWallets.length ) {
-					setNoWallets(true);
-				} else {
-					if ( onWalletListChange ) { onWalletListChange(savedWallets); }
-					setUserSmartWallets(savedWallets);
-				}
 			})
 
 	}, [ currentChain, userAddress ]);
@@ -309,7 +278,7 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 				<TokenAmounts
 					walletAddress={ selectedWallet }
 					tokens={
-						ERC20Balances
+						smartWalletBalances
 						.filter((item) => { return item.walletAddress.toLowerCase() === selectedWallet.toLowerCase() })
 						.filter((item) => {
 							if ( !currentChain ) { return true; }
@@ -318,25 +287,25 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 								chainTypeToERC20(currentChain),
 								...erc20List
 							].find((iitem) => {
-								return item.balance.contractAddress.toLowerCase() === iitem.contractAddress.toLowerCase();
+								return item.tokenAddress.toLowerCase() === iitem.contractAddress.toLowerCase();
 							});
 							if ( !foundToken ) {
-								foundToken = getNullERC20(item.balance.contractAddress);
+								foundToken = getNullERC20(item.tokenAddress);
 							}
 
 							if ( !foundToken.decimals ) { return false; }
 
 							if ( inputHideSmallAmounts ) {
-								return tokenToFloat(item.balance.balance, foundToken.decimals).gt(SMALL_AMOUNT);
+								return tokenToFloat(item.amount, foundToken.decimals).gt(SMALL_AMOUNT);
 							} else {
-								return !item.balance.balance.eq(0)
+								return !item.amount.eq(0)
 							}
 						})
 						.map((item) => {
 							return {
-								contractAddress: item.balance.contractAddress,
-								assetType: item.balance.contractAddress === '0x0000000000000000000000000000000000000000' ? _AssetType.native : _AssetType.ERC20,
-								amount: item.balance.balance
+								contractAddress: item.tokenAddress,
+								assetType: item.tokenAddress === '0x0000000000000000000000000000000000000000' ? _AssetType.native : _AssetType.ERC20,
+								amount: item.amount
 							}
 						})
 					}
@@ -374,14 +343,7 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 	if ( !currentChain ) { return null; }
 
 	const getSmartWalleLabel = (item: SmartWalletType) => {
-		if ( !item.name && !item.symbol ) { return item.contractAddress; }
-
-		let output = '';
-		if ( item.symbol ) { output = `${output} ${item.symbol}`.trim(); }
-		if ( item.name ) { output = `${output} — ${item.name}`.trim(); }
-
-		output = `${output} (${compactString(item.contractAddress)})`;
-		return output;
+		return item.contractAddress;
 	}
 
 	return (
@@ -423,8 +385,11 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 
 								getSmartWalletBalances(currentChain.chainId, value)
 									.then((data) => {
-										data.forEach((item) => {
-											updateERC20Balance(item.contractAddress, value)
+										setSmartWalletBalances((prevState) => {
+											return [
+												...prevState.filter((item) => { return item.walletAddress.toLowerCase() !== value.toLowerCase() }),
+												...data
+											]
 										})
 									})
 							}}
