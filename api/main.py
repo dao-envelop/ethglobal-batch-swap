@@ -24,6 +24,7 @@ def get_trates_for_wallet(
     user_address: str,
 ):
     amounts = wallets_amounts(chain_id, user_address)
+    logger.info('Amounts: {}'.format(amounts))
     return amounts
 
 
@@ -94,7 +95,7 @@ def swapproxy(
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"{e}")
 
 @app.get("/wallets/{chain_id}/{user_address}")
-def wallets_amounts(
+def wallets(
     chain_id: str,
     user_address: str,
 ):
@@ -137,7 +138,7 @@ def wallets_amounts(
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"{e}")
 
 @app.get("/balance/{chain_id}/{user_address}")
-def wallets(
+def wallets_amounts(
     chain_id: str,
     user_address: str,
 ):
