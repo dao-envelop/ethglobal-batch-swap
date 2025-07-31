@@ -9,6 +9,7 @@ import {ETHGlobalSmartWallet} from "../src/ETHGlobalSmartWallet.sol";
 import {WalletFactory} from "../src/WalletFactory.sol";
 import {Wallet} from "../src/Wallet.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
+import {MockERC721} from "../src/mocks/MockERC721.sol";
 
 contract ETHGlobalSmartWalletTest is Test {
     ETHGlobalSmartWallet public impl;
@@ -16,6 +17,7 @@ contract ETHGlobalSmartWalletTest is Test {
     ETHGlobalSmartWallet public wallet;
     MockERC20 erc20_1;
     MockERC20 erc20_2;
+    MockERC721 public erc721;
     address payable walletAddress;
     uint256 sendERC20Amount = 2e18;
 
@@ -24,6 +26,7 @@ contract ETHGlobalSmartWalletTest is Test {
         impl = new ETHGlobalSmartWallet(address(factory));
         erc20_1 = new MockERC20("Mock ERC20", "ERC20");
         erc20_2 = new MockERC20("Mock ERC20", "ERC20");
+        erc721 = new MockERC721("Mock ERC721", "ERC");
         ETHGlobalSmartWallet.InitParams memory initData = ETHGlobalSmartWallet.InitParams(
             address(this),
             "ETHGlobal Smart Wallet",
@@ -122,5 +125,30 @@ contract ETHGlobalSmartWalletTest is Test {
         wallet.transferFrom(address(this), address(3), tokenId);
         assertEq(wallet.ownerOf(tokenId), address(2));
         assertEq(wallet.getApproved(tokenId), address(0));
+    }
+
+    function test_batch_several_different_assets() public {
+        uint256 tokenId = 0;
+        erc721.transferFrom(address(this), walletAddress, tokenId);
+        erc20_1.transfer(walletAddress, sendERC20Amount);
+
+        assertEq(erc721.ownerOf(tokenId), walletAddress);
+        assertEq(erc20_1.balanceOf(walletAddress), sendERC20Amount);
+        address[] memory targets = new address[](2);
+        bytes[] memory dataArray = new bytes[](2);
+        uint256[] memory values = new uint256[](2);
+        address receiver = address(2);
+        targets[0] = address(erc20_1);
+        targets[1] = address(erc721);
+        values[0] = 0;
+        values[1] = 0;
+        dataArray[0] = abi.encodeWithSignature("transfer(address,uint256)", receiver, sendERC20Amount);
+        dataArray[1] = abi.encodeWithSignature(
+            "safeTransferFrom(address,address,uint256,bytes)", walletAddress, receiver, tokenId, bytes("")
+        );
+        wallet.executeEncodedTxBatch(targets, values, dataArray);
+        assertEq(erc721.ownerOf(tokenId), receiver);
+        assertEq(erc20_1.balanceOf(walletAddress), 0);
+        assertEq(erc20_1.balanceOf(receiver), sendERC20Amount);
     }
 }
