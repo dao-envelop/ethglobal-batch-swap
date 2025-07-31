@@ -21,8 +21,8 @@ def read_root(
     token_id: str,
 ):
     return {
-        "name": "Smart wallet token",
-        "description": "Smart wallet token",
+        "name": "ETHGlobal Smart Wallet",
+        "description": "ETHGlobal Smart Wallet powered by 1inch",
         "image": f"https://apidev.envelop.is/metaimg/{chain_id}/{contract_address}/{token_id}"
     }
 @app.get("/metaimg/{chain_id}/{contract_address}/{token_id}")
@@ -88,7 +88,7 @@ def wallets(
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Unsupported chain")
 
     API_1INCH_NFT_POSTFIX = 'nft/v2'
-    WALLET_NAME = 'Smart wallet token'
+    WALLET_NAME = 'ETHGlobal Smart Wallet'
 
     headers = {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
@@ -130,7 +130,7 @@ def wallets(
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Unsupported chain")
 
     API_1INCH_BALANCE_POSTFIX = 'balance/v1.2'
-    WALLET_NAME = 'Smart wallet token'
+    WALLET_NAME = 'ETHGlobal Smart Wallet'
 
     headers = {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
