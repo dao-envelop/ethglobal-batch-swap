@@ -151,7 +151,6 @@ def wallets_amounts(
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Unsupported chain")
 
     API_1INCH_BALANCE_POSTFIX = 'balance/v1.2'
-    WALLET_NAME = 'ETHGlobal Smart Wallet'
 
     headers = {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
@@ -214,8 +213,9 @@ def wallets(
         'Authorization': f"Bearer {API_1INCH_TOKEN}"
     }
 
+    address_to_check = token_address if token_address != '0x0000000000000000000000000000000000000000' else '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
     url = f"{API_1INCH_BASE_URL.strip('/')}/{API_1INCH_BALANCE_POSTFIX}/{chain_id}/balances/{user_address}"
-    data = { "tokens": [ token_address ] }
+    data = { "tokens": [ address_to_check ] }
 
     try:
         req = urllib.request.Request(url, json.dumps(data).encode('utf-8'), headers=headers)
@@ -223,7 +223,7 @@ def wallets(
         data = resp.read()
         data_parsed = json.loads(data)
 
-        return { 'address': token_address, 'amount': data_parsed[token_address.lower()] }
+        return { 'address': token_address, 'amount': data_parsed[address_to_check.lower()] }
 
     except urllib.error.HTTPError as e:
         return Response(status_code=e.code, media_type='application/json', content=e.fp.read().decode('utf-8'))
