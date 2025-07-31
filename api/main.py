@@ -19,6 +19,14 @@ API_1INCH_TOKEN = os.environ.get('API_1INCH_TOKEN', None)
 API_1INCH_BASE_URL = os.environ.get('API_1INCH_BASE_URL', None)
 SUPPORTED_CHAINS = [ '42161' ]
 
+def get_trates_for_wallet(
+    chain_id: str,
+    user_address: str,
+):
+    amounts = wallets_amounts(chain_id, user_address)
+    return amounts
+
+
 app = FastAPI()
 
 # ---------- META ----------
@@ -31,8 +39,10 @@ def read_root(
     return {
         "name": "ETHGlobal Smart Wallet",
         "description": "ETHGlobal Smart Wallet powered by 1inch",
-        "image": f"https://apidev.envelop.is/metaimg/{chain_id}/{contract_address}/{token_id}"
+        "image": f"https://apidev.envelop.is/metaimg/{chain_id}/{contract_address}/{token_id}",
+        "attributes": get_trates_for_wallet(chain_id, contract_address)
     }
+
 @app.get("/metaimg/{chain_id}/{contract_address}/{token_id}")
 def read_root(
     chain_id: str,
@@ -84,7 +94,7 @@ def swapproxy(
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"{e}")
 
 @app.get("/wallets/{chain_id}/{user_address}")
-def wallets(
+def wallets_amounts(
     chain_id: str,
     user_address: str,
 ):
@@ -125,6 +135,7 @@ def wallets(
         return Response(status_code=e.code, media_type='application/json', content=e.fp.read().decode('utf-8'))
     except Exception as e:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"{e}")
+
 @app.get("/balance/{chain_id}/{user_address}")
 def wallets(
     chain_id: str,
