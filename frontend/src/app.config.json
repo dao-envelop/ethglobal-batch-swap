@@ -3,52 +3,8 @@
 	"CHAIN_SPECIFIC_DATA": [
 
 		{
-			"chainId": 56,
-			"WNFTV2Index": "0x28466e3e92CB6FB292618D0faEbB49624f4d6f0C",
-			"WNFTFactory": "0xBDb5201565925AE934A5622F0E7091aFFceed5EB",
-			"smartWalletContract": "0x22bBBE241464AB67c9B4F0881fA45F7f2d26870F",
-			"WNFTStorageContracts": [
-				{ "contractAddress": "0x7650e19DBCb267ccDbAb3c7aA15680f4817D7732", "assetType": "721" },
-				{ "contractAddress": "0x842C1F3b0882Fe99A796d567693dE61602CB6Edf", "assetType": "1155" },
-				{ "contractAddress": "0x724501883ff1E06dDa51f0C4F4683fcd09346Ab0", "assetType": "721" },
-				{ "contractAddress": "0xE29a21752090453296E986Db23723F023103cb1f", "assetType": "1155" },
-				{ "contractAddress": "0xC8095B46819Ee26a792BD1576D85153A0E40f1df", "assetType": "721" },
-				{ "contractAddress": "0x8f09277e70B7db4EEFDfc62803B573f3B77d325D", "assetType": "1155" },
-				{ "contractAddress": "0xB42397AD9E82b82c2dB56bF56Ac23B0A69990605", "assetType": "721" },
-				{ "contractAddress": "0x2C3512376B23bAB9bfC4850ED8E8a8Fd78CC55f2", "assetType": "1155" },
-				{ "contractAddress": "0x5A609bC283ca360fC56ceAb0dfb40b2b33B77677", "assetType": "721" }
-			],
-			"checkoutTokens": [
-				"0x0000000000000000000000000000000000000000",
-				"0x55d398326f99059ff775485246999027b3197955",
-				"0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
-				"0x5d3a1ff2b6bab83b63cd9ad0787074081a52ef34",
-				"0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3"
-			],
-			"supportedERC20Tokens": [
-				"0x55d398326f99059ff775485246999027b3197955",
-				"0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
-				"0x5d3a1ff2b6bab83b63cd9ad0787074081a52ef34",
-				"0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3"
-			],
-			"nftMinterContract721": "0xE90a679a862Ea371A5c0a7451843667CB23021c8",
-			"nftMinterContract1155": "0xC16FFb680FB5C592cfF1ae0fFf01a48cAfBC4b53",
-			"subscriptionAgent": "0x7c20a3e0f58304d33074759d220de11b9df8014f"
-		},
-
-		{
 			"chainId": 42161,
-			"WNFTV2Index": "0xcD88Cd5F96Ad232b9209b7452021284440520955",
-			"WNFTFactory": "0xBDb5201565925AE934A5622F0E7091aFFceed5EB",
-			"smartWalletContract": "0xC425A68df03764F648883b961eb982f087fe22ca",
-			"WNFTStorageContracts": [
-				{ "contractAddress": "0x16902a523A598fA92C39Af0E21F943Bb8B6Cb3df", "assetType": "721" },
-				{ "contractAddress": "0x016B602ae895F9FBC3ed09CDff192F94112C9cFC", "assetType": "1155" },
-				{ "contractAddress": "0xF81356B101A52cf62BBe1E34353a139934dE4c17", "assetType": "721" },
-				{ "contractAddress": "0xE29a21752090453296E986Db23723F023103cb1f", "assetType": "1155" },
-				{ "contractAddress": "0x255fFe0378c7C884a1b3dd03C560198934b9e54c", "assetType": "721" },
-				{ "contractAddress": "0x474168af6C9c75987ba5a486220389Ed6D36BF99", "assetType": "1155" }
-			],
+			"smartWalletFactory": "0xC396a63A67B7F569f76FB41501Ddc577E895e0A6",
 			"checkoutTokens": [
 				"0x0000000000000000000000000000000000000000",
 				"0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
@@ -70,77 +26,5 @@
 
 	],
 
-	"navigationLinks": [
-		{
-			"name": "Wrapper",
-			"description" : "",
-			"url": "",
-			"active": false,
-			"local": false,
-			"newTab": false,
-			"children": [
-				{
-					"name": "Dashboard",
-					"description": "View all of your NFTs",
-					"url": "/dashboard",
-					"active": false,
-					"local": false,
-					"newTab": false,
-					"children": []
-				},
-				{
-					"name": "Wrap wNFT",
-					"description" : "Create new wNFT",
-					"url": "/wrap",
-					"active": true,
-					"local": false,
-					"newTab": false,
-					"children": []
-				}
-			]
-		},
-		{
-			"name": "Mint",
-			"description" : "",
-			"url": "/mintnew",
-			"active": false,
-			"local": false,
-			"newTab": false,
-			"children": [],
-			"showInChains": [ 5, 11155111, 1, 137, 56, 42161, 168587773, 81457, 10 ]
-		},
-		{
-			"name": "SAFT",
-			"description" : "",
-			"url": "/saft",
-			"active": true,
-			"local": false,
-			"newTab": false,
-			"children": [],
-			"showInChains": [ 5, 11155111, 1, 137, 56, 42161, 81457, 10 ]
-		},
-		{
-			"name": "Farming",
-			"description" : "",
-			"url": "https://appv0.envelop.is/farming/",
-			"active": false,
-			"local": false,
-			"newTab": true,
-			"children": [],
-			"showInChains": [ 1, 56, 137 ],
-			"auxStyle": { "color": "#999" }
-		},
-		{
-			"name": "Showcases",
-			"description" : "",
-			"url": "/launchpad_admin",
-			"active": false,
-			"local": false,
-			"newTab": false,
-			"children": [],
-			"showInChains": [ 11155111, 137, 81457, 42161, 56, 1 ]
-		}
-	],
-	"defaultChain": 56,
-	"PINATA_AUTH": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiJlMjM0YTNlZS02NzdmLTQ3NzEtYjY0Mi0wZWY0MjBiMTE4ZWUiLCJlbWFpbCI6InRlY2hAbmlmdHN5LmlvIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siaWQiOiJGUkExIiwiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjF9LHsiaWQiOiJOWUMxIiwiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjF9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6ImUyYTc1MGY1ZGQzYjY4MjMyMzUzIiwic2NvcGVkS2V5U2VjcmV0IjoiMjlmM2M2NDY3M2MzYmI4YTZlNDY1ODIxMDQxNGI0ZTU1N2M0Njc2NjRkMjY5NTdkNGViZTI4MTk3Zjg1ODBjOSIsImlhdCI6MTY5MzkxMDExNH0.B59NCeHY3bWjqOn6xpiN9SHMh-1Wz4tiGOYlLk-d11g"
+	"defaultChain": 42161
 }

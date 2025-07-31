@@ -92,7 +92,6 @@ export default function BatchSwap() {
 	const [ inputContentTokenAddress,        setInputContentTokenAddress        ] = useState('');
 	const [ contentTokens,                   setContentTokens                   ] = useState<Array<ContentTokenRowType>>([]);
 
-	const [ swapRouterAddress,               setSwapRouterAddress               ] = useState('');
 	const [ swapError,                       setSwapError                       ] = useState('');
 
 	const [ showError,                       setShowError                       ] = useState(false);
@@ -103,12 +102,7 @@ export default function BatchSwap() {
 
 		try {
 			const foundChain = config.CHAIN_SPECIFIC_DATA.find((item) => { return item.chainId === currentChain.chainId });
-			if ( !foundChain || !foundChain.WNFTFactory ) { return; }
-
-			// setWNFTV2IndexAddress(foundChain.WNFTV2Index);
-			// console.log('WNFTV2Index', foundChain.WNFTV2Index);
-
-			setSupportedCheckoutTokens(foundChain.checkoutTokens);
+			if ( foundChain ) { setSupportedCheckoutTokens(foundChain.checkoutTokens); }
 		} catch(e) {
 			console.log('Cannot load params', e);
 		}

@@ -9,14 +9,15 @@ import {
 	Web3
 } from "@envelop/envelop-client-core";
 
-export const createSmartWallet = async (web3: Web3, contractAddress: string, userAddress: string, params?: { name?: string, symbol?: string }) => {
+export const createSmartWallet = async (web3: Web3, contractAddress: string, userAddress: string) => {
 
-	const contract = await createContract(web3, 'wnftv2index', contractAddress);
+	const abi = require(`../abis/smartwalletfactory.json`);
+	const contract = new web3.eth.Contract(abi as any, contractAddress);
 
-	const tx = await contract.methods.createWNFTonFactory([
+	const tx = await contract.methods.createWalletOnFactory([
 		userAddress,
-		params?.name || '',
-		params?.symbol || '',
+		'',
+		'',
 		'',
 		[],
 		[],
