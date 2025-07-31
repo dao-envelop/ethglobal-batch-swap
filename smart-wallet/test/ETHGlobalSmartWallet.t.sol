@@ -94,4 +94,17 @@ contract ETHGlobalSmartWalletTest is Test {
         assertEq(erc20_1.balanceOf(receiver), sendERC20Amount);
         assertEq(erc20_2.balanceOf(receiver), sendERC20Amount * 2);
     }
+
+    function test_transferFrom() public {
+        uint256 tokenId = impl.TOKEN_ID();
+        wallet.approve(address(1), tokenId);
+        vm.prank(address(1));
+        wallet.transferFrom(address(this), address(2), tokenId);
+        assertEq(wallet.getApproved(tokenId), address(0));
+        
+        vm.prank(address(1));
+        vm.expectRevert();
+        wallet.transferFrom(address(this), address(3), tokenId);
+        assertEq(wallet.ownerOf(tokenId), address(2));
+    }
 }
