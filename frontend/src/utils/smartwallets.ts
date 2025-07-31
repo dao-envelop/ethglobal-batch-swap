@@ -34,23 +34,71 @@ export const createSmartWallet = async (web3: Web3, contractAddress: string, use
 	return tx.send({ from: userAddress, maxPriorityFeePerGas: null, maxFeePerGas: null });
 
 }
-export const getSmartWalletBalances = async (chainId: number, contractAddress: string): Promise<Array<ERC20Balance>> => {
+export const getSmartWalletBalances = async ( chainId: number, walletAddress: string ) => {
 
-	return [];
+	const BASE_URL = process.env.REACT_APP_PROXY_API_BASE_URL;
+	if ( !BASE_URL ) {
+		console.log('No proxy base url in .env');
+		throw new Error('No proxy base url in .env');
+	}
+
+	const url = combineURLs(BASE_URL, `/balance/${chainId}/${walletAddress}`);
+
+	let respParsed: any;
+	try {
+		const resp = await fetch(url);
+
+		if ( resp && resp.ok ) {
+			respParsed = await resp.json();
+		}
+	} catch (e) {
+		console.log('Cannot load user wallets', e);
+	}
+
+	if ( !respParsed ) {
+		console.log('Cannot load user wallets');
+	}
+
+	return respParsed.map((item: any) => {
+		return {
+			address: item.address,
+			amount: new BigNumber(item.amount)
+		};
+	});
 
 }
-export const getSmartWalletTokens = async (chainId: number, contractAddress: string): Promise<Array<string>> => {
 
-	return [];
+export const getUserSmartWalletsFromAPI = async ( chainId: number, userAddress: string ) => {
 
-}
+	const BASE_URL = process.env.REACT_APP_PROXY_API_BASE_URL;
+	if ( !BASE_URL ) {
+		console.log('No proxy base url in .env');
+		throw new Error('No proxy base url in .env');
+	}
 
-export const getUserSmartWalletsFromAPI = async (
-	chainId: number,
-	userAddress: string,
-) => {
+	const url = combineURLs(BASE_URL, `/wallets/${chainId}/${userAddress}`);
 
-	return [];
+	let respParsed: any;
+	try {
+		const resp = await fetch(url);
+
+		if ( resp && resp.ok ) {
+			respParsed = await resp.json();
+		}
+	} catch (e) {
+		console.log('Cannot load user wallets', e);
+	}
+
+	if ( !respParsed ) {
+		console.log('Cannot load user wallets');
+	}
+
+	return respParsed.map((item: any) => {
+		return {
+			contractAddress: item.asset_contract.address,
+			name: item.name
+		};
+	});
 
 }
 
