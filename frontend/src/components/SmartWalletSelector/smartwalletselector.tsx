@@ -40,7 +40,6 @@ import {
 	createSmartWallet,
 	getSmartWalletBalances,
 } from "../../utils/smartwallets";
-import TippyWrapper from "../TippyWrapper";
 
 type SmartWalletSelectorProps = {
 	onWalletSelect?: (e: string) => void,
@@ -90,11 +89,9 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 		setLoading,
 	} = useContext(InfoModalContext);
 
-	const [ smartWalletContract,             setSmartWalletContract             ] = useState('');
+	const [ smartWalletFactory,              setSmartWalletFactory              ] = useState('');
 	const [ userSmartWallets,                setUserSmartWallets                ] = useState<Array<SmartWalletType>>([]);
 	const [ selectedWallet,                  setSelectedWallet                  ] = useState('');
-
-	const [ WNFTFactoryAddress,              setWNFTFactoryAddress              ] = useState('');
 
 	const [ inputHideSmallAmounts,           setInputHideSmallAmounts           ] = useState(JSON.parse(localStorageGet('hidesmallamounts') || 'false'));
 
@@ -108,12 +105,10 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 
 		try {
 			const foundChain = config.CHAIN_SPECIFIC_DATA.find((item) => { return item.chainId === currentChain.chainId });
-			if ( !foundChain || !foundChain.WNFTFactory ) { return; }
+			if ( !foundChain ) { return; }
 
-			setWNFTFactoryAddress(foundChain.WNFTFactory);
-			console.log('WNFTFactoryAddress', foundChain.WNFTFactory);
-			setSmartWalletContract(foundChain.smartWalletContract);
-			console.log('smartWalletContractAddress', foundChain.smartWalletContract);
+			setSmartWalletFactory(foundChain.smartWalletFactory);
+			console.log('smartWalletFactoryAddress', foundChain.smartWalletFactory);
 		} catch(e) {
 			console.log('Cannot load params', e);
 		}
@@ -179,7 +174,7 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 
 	const createWalletSubmit = async (_currentChain: ChainType, _web3: Web3, _userAddress: string, isMultisig?: boolean) => {
 
-		if ( !smartWalletContract ) {
+		if ( !smartWalletFactory ) {
 			unsetModal();
 			setModal({
 				type: _ModalTypes.error,
@@ -192,13 +187,13 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 
 		let txResp;
 		try {
-			txResp = await createSmartWallet(_web3, smartWalletContract, _userAddress);
+			txResp = await createSmartWallet(_web3, smartWalletFactory, _userAddress);
 		} catch(e: any) {
 			setModal({
 				type: _ModalTypes.error,
 				title: `Cannot create wallet`,
 				details: [
-					`Smart wallet contract: ${smartWalletContract}`,
+					`Smart wallet contract: ${smartWalletFactory}`,
 					`User address: ${userAddress}`,
 					'',
 					e.message || e,
@@ -451,7 +446,7 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 					<div className="d-inline-block mr-2 my-3">
 						<button
 							className="btn btn-outline"
-							disabled={ WNFTFactoryAddress === '' }
+							disabled={ smartWalletFactory === '' }
 							onClick={async () => {
 
 								if ( !currentChain ) { return; }
