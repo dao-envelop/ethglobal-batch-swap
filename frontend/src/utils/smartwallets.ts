@@ -61,7 +61,8 @@ export const getSmartWalletBalances = async ( chainId: number, walletAddress: st
 
 	return respParsed.map((item: any) => {
 		return {
-			address: item.address,
+			walletAddress,
+			tokenAddress: item.address,
 			amount: new BigNumber(item.amount)
 		};
 	});
