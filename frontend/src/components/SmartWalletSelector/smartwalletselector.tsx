@@ -16,7 +16,6 @@ import {
 	ChainType,
 	chainTypeToERC20,
 	combineURLs,
-	compactString,
 	getChainId,
 	getNullERC20,
 	localStorageGet,
@@ -36,6 +35,7 @@ import TokenAmounts from "../TokenAmounts";
 import CopyToClipboard from "react-copy-to-clipboard";
 
 import icon_i_copy          from '../../static/pics/icons/i-copy.svg';
+
 import {
 	createSmartWallet,
 	getSmartWalletBalances,
@@ -336,6 +336,24 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 					<span className="btn-action-info" style={{ display: copiedHint ? 'block' : 'none' }}>Copied</span>
 				</button>
 			</CopyToClipboard>
+			<button
+				className="btn-copy"
+				onClick={async () =>{
+					if ( !currentChain ) { return; }
+					if ( selectedWallet === '' ) { return }
+					getSmartWalletBalances(currentChain.chainId, selectedWallet)
+						.then((data) => {
+							setSmartWalletBalances((prevState) => {
+								return [
+									...prevState.filter((item) => { return item.walletAddress.toLowerCase() !== selectedWallet.toLowerCase() }),
+									...data
+								]
+							})
+						})
+				}}
+			>
+				<span className="ml-2">Update balances</span>
+			</button>
 			</div>
 		)
 	}
@@ -404,6 +422,7 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 							showArrow={ true }
 						/>
 					) : null
+
 				}
 
 					{ getCopyBtn() }

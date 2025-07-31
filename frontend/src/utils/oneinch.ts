@@ -4,6 +4,33 @@ import {
 	combineURLs
 } from "@envelop/envelop-client-core"
 
+export const fetchBalanceForToken = async (chainId: number, tokenAddress: string, walletAddress: string): Promise<BigNumber> => {
+
+	const BASE_URL = process.env.REACT_APP_PROXY_API_BASE_URL;
+	if ( !BASE_URL ) {
+		console.log('No proxy base url in .env');
+		throw new Error('No proxy base url in .env');
+	}
+
+	const url = combineURLs(BASE_URL, `/balance/${chainId}/${walletAddress}/${tokenAddress}`);
+
+	let respParsed: any;
+	try {
+		const resp = await fetch(url);
+
+		if ( resp && resp.ok ) {
+			respParsed = await resp.json();
+		}
+	} catch (e) {
+		console.log('Cannot load allowance', e);
+	}
+
+	if ( !respParsed ) {
+		console.log('Cannot load allowance');
+	}
+
+	return new BigNumber(respParsed.amount);
+}
 export const fetchAllowanceForToken = async (chainId: number, tokenAddress: string, walletAddress: string): Promise<BigNumber> => {
 
 	const BASE_URL = process.env.REACT_APP_PROXY_API_BASE_URL;
@@ -69,7 +96,7 @@ export const getSwapDataForToken = async (chainId: number, fromTokenAddress: str
 	}
 
 	const receiver = toWalletAddress || walletAddress;
-	const url = combineURLs(BASE_URL, `/swapproxy/${chainId}/swap?src=${fromTokenAddress}&dst=${toTokenAddress}&amount=${amount}&from=${walletAddress}&origin=${walletAddress}&receiver=${receiver}&slippage=${1}`);
+	const url = combineURLs(BASE_URL, `/swapproxy/${chainId}/swap?src=${fromTokenAddress}&dst=${toTokenAddress}&amount=${amount}&from=${walletAddress}&origin=${walletAddress}&receiver=${receiver}&slippage=${1}&disableEstimate=${true}`);
 
 	let respParsed: any;
 	try {
@@ -87,4 +114,32 @@ export const getSwapDataForToken = async (chainId: number, fromTokenAddress: str
 	}
 
 	return respParsed;
+}
+
+export const getRouterAddress = async (chainId: number) => {
+
+	const BASE_URL = process.env.REACT_APP_PROXY_API_BASE_URL;
+	if ( !BASE_URL ) {
+		console.log('No proxy base url in .env');
+		throw new Error('No proxy base url in .env');
+	}
+
+	const url = combineURLs(BASE_URL, `/swapproxy/${chainId}/approve/spender`);
+
+	let respParsed: any;
+	try {
+		const resp = await fetch(url);
+
+		if ( resp && resp.ok ) {
+			respParsed = await resp.json();
+		}
+	} catch (e) {
+		console.log('Cannot load swap calldata', e);
+	}
+
+	if ( !respParsed ) {
+		console.log('Cannot load swap calldata');
+	}
+
+	return respParsed.address;
 }

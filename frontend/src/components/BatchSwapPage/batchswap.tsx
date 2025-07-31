@@ -23,10 +23,11 @@ import {
 	ERC20Type,
 	getChainId,
 	getNullERC20,
-	localStorageGet,
 	removeThousandSeparator,
 	tokenToFloat,
 	tokenToInt,
+	transferERC20,
+	transferNativeTokens,
 	Web3
 } from "@envelop/envelop-client-core";
 
@@ -40,7 +41,9 @@ import icon_loading from '../../static/pics/loading.svg';;
 import config       from '../../app.config.json';
 import {
 	fetchAllowanceForToken,
+	fetchBalanceForToken,
 	getApprovalDataForToken,
+	getRouterAddress,
 	getSwapDataForToken,
 } from "../../utils/oneinch";
 
@@ -92,6 +95,7 @@ export default function BatchSwap() {
 	const [ inputContentTokenAddress,        setInputContentTokenAddress        ] = useState('');
 	const [ contentTokens,                   setContentTokens                   ] = useState<Array<ContentTokenRowType>>([]);
 
+	const [ swapRouterAddress,               setSwapRouterAddress               ] = useState('');
 	const [ swapError,                       setSwapError                       ] = useState('');
 
 	const [ showError,                       setShowError                       ] = useState(false);
@@ -106,6 +110,10 @@ export default function BatchSwap() {
 		} catch(e) {
 			console.log('Cannot load params', e);
 		}
+
+		getRouterAddress(currentChain.chainId)
+			.then((data) => { setSwapRouterAddress(data) })
+			.catch(() => { setSwapRouterAddress('') })
 
 	}, [ currentChain ]);
 
@@ -683,22 +691,29 @@ export default function BatchSwap() {
 		const loaderStages: Array<AdvancedLoaderStageType> = []
 
 		loaderStages.push({
-			id: 'preparetx_approve',
+			id: 'transfertomaster',
 			sortOrder: 10,
+			text: 'Transferring tokens to smart wallet',
+			status: _AdvancedLoadingStatus.queued
+		});
+
+		loaderStages.push({
+			id: 'preparetx_approve',
+			sortOrder: 20,
 			text: 'Approve source token',
 			status: _AdvancedLoadingStatus.queued
 		});
 
 		loaderStages.push({
 			id: 'preparetx_swap',
-			sortOrder: 20,
+			sortOrder: 30,
 			text: 'Prepare batch of txs: swap tokens',
 			total: contentTokens.length,
 			status: _AdvancedLoadingStatus.queued
 		});
 		loaderStages.push({
 			id: 'executetx_swap',
-			sortOrder: 21,
+			sortOrder: 31,
 			text: `Executing batch of swaps`,
 			status: _AdvancedLoadingStatus.queued
 		});
@@ -708,6 +723,140 @@ export default function BatchSwap() {
 			stages: loaderStages
 		};
 		createAdvancedLoader(advLoader);
+
+	}
+	const transferCheckoutTokensToMaster = async (_currentChain: ChainType, _web3: Web3, _userAddress: string, isMultisig?: boolean) => {
+
+		if ( inputCheckoutTokenAmount === '' || inputCheckoutTokenAmount === '0' ) {
+			throw new Error('Empty amount')
+		}
+
+		let foundCheckoutERC20 = erc20List.find((item) => { return item.contractAddress.toLowerCase() === inputCheckoutTokenAddress.toLowerCase() });
+		if ( !foundCheckoutERC20 ) {
+			foundCheckoutERC20 = getNullERC20(inputCheckoutTokenAddress);
+		}
+
+		if ( inputCheckoutTokenAddress === '0x0000000000000000000000000000000000000000' ) {
+
+			updateStepAdvancedLoader({
+				id: 'transfertomaster',
+				status: _AdvancedLoadingStatus.loading,
+				text: `Transferring ${ _currentChain.symbol } to smart wallet`,
+			});
+
+			const amountToCheck = tokenToInt(new BigNumber(inputCheckoutTokenAmount), _currentChain.decimals);
+			const walletBalance = await fetchBalanceForToken(_currentChain.chainId, inputCheckoutTokenAddress, walletToUse);
+			const amountDiff = amountToCheck.minus(walletBalance);
+
+			if ( amountDiff.gt(0) ) {
+				const userBalance = await fetchBalanceForToken(_currentChain.chainId, inputCheckoutTokenAddress, _userAddress);
+				if ( userBalance.lt(amountDiff) ) {
+					setModal({
+						type: _ModalTypes.error,
+						title: `Not enough ${_currentChain.symbol}`,
+						details: [
+							`Stage: transferCheckoutTokensToMaster`,
+							`Token ${_currentChain.symbol}: ${inputCheckoutTokenAddress}`,
+							`User address: ${_userAddress}`,
+							`Wallet address: ${walletToUse}`,
+							`Amount to send: ${tokenToFloat(amountToCheck, _currentChain.decimals).toString()} (${amountToCheck})`,
+							`Balance diff: ${tokenToFloat(amountDiff, _currentChain.decimals).toString()} (${amountDiff})`,
+							`User balance: ${tokenToFloat(userBalance, _currentChain.decimals).toString()} (${userBalance})`,
+							`Smart wallet balance: ${tokenToFloat(walletBalance, _currentChain.decimals).toString()} (${walletBalance})`,
+						]
+					});
+					throw new Error();
+				}
+
+				try {
+					await transferNativeTokens(_web3, _userAddress, amountDiff, walletToUse);
+				} catch(e: any) {
+					setModal({
+						type: _ModalTypes.error,
+						title: `Cannot transfer ${_currentChain.symbol}`,
+						details: [
+							`Stage: transferCheckoutTokensToMaster`,
+							`Token ${_currentChain.symbol}: ${inputCheckoutTokenAddress}`,
+							`User address: ${_userAddress}`,
+							`Wallet address: ${walletToUse}`,
+							`Amount to send: ${tokenToFloat(amountToCheck, _currentChain.decimals).toString()} (${amountToCheck})`,
+							`Balance diff: ${tokenToFloat(amountDiff, _currentChain.decimals).toString()} (${amountDiff})`,
+							`User balance: ${tokenToFloat(userBalance, _currentChain.decimals).toString()} (${userBalance})`,
+							`Smart wallet balance: ${tokenToFloat(walletBalance, _currentChain.decimals).toString()} (${walletBalance})`,
+							'',
+							e.message || e,
+						]
+					});
+					throw new Error();
+				}
+
+			}
+
+		} else {
+			let foundToken = erc20List.find((item) => { return item.contractAddress.toLowerCase() === inputCheckoutTokenAddress.toLowerCase() });
+			if ( !foundToken ) {
+				foundToken = getNullERC20(inputCheckoutTokenAddress);
+			}
+
+			updateStepAdvancedLoader({
+				id: 'transfertomaster',
+				status: _AdvancedLoadingStatus.loading,
+				text: `Transferring ${ foundToken.symbol } to smart wallet`,
+			});
+
+			const amountToCheck = tokenToInt(new BigNumber(inputCheckoutTokenAmount), _currentChain.decimals);
+			const walletBalance = await fetchBalanceForToken(_currentChain.chainId, inputCheckoutTokenAddress, walletToUse);
+			const amountDiff = amountToCheck.minus(walletBalance);
+
+			if ( amountDiff.gt(0) ) {
+				const userBalance = await fetchBalanceForToken(_currentChain.chainId, inputCheckoutTokenAddress, _userAddress);
+				if ( userBalance.lt(amountDiff) ) {
+					setModal({
+						type: _ModalTypes.error,
+						title: `Not enough ${_currentChain.symbol}`,
+						details: [
+							`Stage: transferCheckoutTokensToMaster`,
+							`Token ${_currentChain.symbol}: ${inputCheckoutTokenAddress}`,
+							`User address: ${_userAddress}`,
+							`Wallet address: ${walletToUse}`,
+							`Amount to send: ${tokenToFloat(amountToCheck, _currentChain.decimals).toString()} (${amountToCheck})`,
+							`Balance diff: ${tokenToFloat(amountDiff, _currentChain.decimals).toString()} (${amountDiff})`,
+							`User balance: ${tokenToFloat(userBalance, _currentChain.decimals).toString()} (${userBalance})`,
+							`Smart wallet balance: ${tokenToFloat(walletBalance, _currentChain.decimals).toString()} (${walletBalance})`,
+						]
+					});
+					throw new Error();
+				}
+
+				try {
+					await transferERC20(_web3, inputCheckoutTokenAddress, _userAddress, amountDiff, walletToUse);
+				} catch(e: any) {
+					setModal({
+						type: _ModalTypes.error,
+						title: `Cannot transfer ${_currentChain.symbol}`,
+						details: [
+							`Stage: transferCheckoutTokensToMaster`,
+							`Token ${_currentChain.symbol}: ${inputCheckoutTokenAddress}`,
+							`User address: ${_userAddress}`,
+							`Wallet address: ${walletToUse}`,
+							`Amount to send: ${tokenToFloat(amountToCheck, _currentChain.decimals).toString()} (${amountToCheck})`,
+							`Balance diff: ${tokenToFloat(amountDiff, _currentChain.decimals).toString()} (${amountDiff})`,
+							`User balance: ${tokenToFloat(userBalance, _currentChain.decimals).toString()} (${userBalance})`,
+							`Smart wallet balance: ${tokenToFloat(walletBalance, _currentChain.decimals).toString()} (${walletBalance})`,
+							'',
+							e.message || e,
+						]
+					});
+					throw new Error();
+				}
+
+			}
+		}
+
+		updateStepAdvancedLoader({
+			id: 'transfertomaster',
+			status: _AdvancedLoadingStatus.complete
+		});
 
 	}
 	const preparetx_approve = async (_currentChain: ChainType, _web3: Web3, _userAddress: string) => {
@@ -721,7 +870,6 @@ export default function BatchSwap() {
 		}
 		updateStepAdvancedLoader({
 			id: 'preparetx_approve',
-			text: 'Approve source token. Prepare tx',
 			status: _AdvancedLoadingStatus.loading,
 		});
 
@@ -735,10 +883,8 @@ export default function BatchSwap() {
 
 		try {
 			const allowance = await fetchAllowanceForToken(_currentChain.chainId, inputCheckoutTokenAddress, walletToUse);
-			console.log('allowance', allowance.toString());
 			if ( allowance.lt(amountToCheck) ) {
 				approveTx = await getApprovalDataForToken(_currentChain.chainId, inputCheckoutTokenAddress, amountToCheck);
-				console.log('approveTx', approveTx);
 			}
 		} catch(e: any) {
 			setModal({
@@ -757,25 +903,23 @@ export default function BatchSwap() {
 
 		updateStepAdvancedLoader({
 			id: 'preparetx_approve',
-			text: 'Approve source token. Send tx'
-		});
-
-		// execute
-
-		updateStepAdvancedLoader({
-			id: 'preparetx_approve',
 			status: _AdvancedLoadingStatus.complete
 		});
+
+		return {
+			target: [ inputCheckoutTokenAddress ],
+			data: [ approveTx.data ],
+			value: [ approveTx.value ],
+		}
 	}
 	const preparetx_swap = async (_currentChain: ChainType, _web3: Web3, _userAddress: string) => {
 
 		updateStepAdvancedLoader({
-			id: 'preparetx_approve',
-			text: 'Approve source token. Prepare tx',
+			id: 'preparetx_swap',
 			status: _AdvancedLoadingStatus.loading,
 		});
 
-		const txs = [];
+		let txs: Array<{ target: Array<string>, value: Array<string>, data: Array<string> }> = [];
 		let foundCheckoutERC20 = erc20List.find((item) => { return item.contractAddress.toLowerCase() === inputCheckoutTokenAddress.toLowerCase() });
 		if ( !foundCheckoutERC20 ) {
 			foundCheckoutERC20 = getNullERC20(inputCheckoutTokenAddress);
@@ -791,7 +935,7 @@ export default function BatchSwap() {
 			}
 
 			updateStepAdvancedLoader({
-				id: 'preparetx_approve',
+				id: 'preparetx_swap',
 				text: `Approve source token. Prepare tx for (${foundERC20.symbol})`,
 				status: _AdvancedLoadingStatus.loading,
 				current: idx+1,
@@ -802,13 +946,19 @@ export default function BatchSwap() {
 
 			try {
 				const tx = await getSwapDataForToken(_currentChain.chainId, inputCheckoutTokenAddress, item.address, amountToCheck, walletToUse);
-				if ( tx ) { txs.push(tx); }
+				if ( tx ) {
+					txs.push({
+						target: [ swapRouterAddress ],
+						value: [ tx.tx.value ],
+						data: [ tx.tx.data ],
+					});
+				}
 			} catch(e: any) {
 				setModal({
 					type: _ModalTypes.error,
 					title: `Cannot get swap calldata for ${foundCheckoutERC20.symbol}`,
 					details: [
-						`Stage: preparetx_approve`,
+						`Stage: preparetx_swap`,
 						`Token ${foundCheckoutERC20.symbol}: ${foundCheckoutERC20.contractAddress}`,
 						`User address: ${_userAddress}`,
 						`Wallet address: ${walletToUse}`,
@@ -821,7 +971,7 @@ export default function BatchSwap() {
 		}
 
 		updateStepAdvancedLoader({
-			id: 'preparetx_approve',
+			id: 'preparetx_swap',
 			text: `Approve source token. Prepare tx`,
 			status: _AdvancedLoadingStatus.complete,
 			current: contentTokens.length,
@@ -838,7 +988,30 @@ export default function BatchSwap() {
 
 		let txResp: any;
 		try {
-			// txResp = await executeTxBatch(_web3, walletToUse, _userAddress, txs);
+			const abi = require(`../../abis/smartwallet.json`);
+			const contract = new _web3.eth.Contract(abi as any, walletToUse);
+
+			const argTargets = txs.map((item) => { return item.target.flat() }).flat();
+			console.log('argTargets', argTargets);
+			const argValues = txs.map((item) => { return item.value.flat() }).flat();
+			console.log('argValues', argValues);
+			const argDatas = txs.map((item) => { return item.data.flat() }).flat();
+			console.log('argDatas', argDatas);
+
+			const tx = await contract.methods.executeEncodedTxBatch(
+				argTargets,
+				argValues,
+				argDatas,
+			);
+
+			// try {
+			// 	await tx.estimateGas({ from: userAddress })
+			// } catch(e) {
+			// 	throw e;
+			// }
+
+			txResp = await tx.send({ from: userAddress, maxPriorityFeePerGas: null, maxFeePerGas: null });
+
 		} catch(e: any) {
 			setModal({
 				type: _ModalTypes.error,
@@ -863,11 +1036,34 @@ export default function BatchSwap() {
 	}
 	const swapSubmit = async (_currentChain: ChainType, _web3: Web3, _userAddress: string) => {
 
+		if ( swapRouterAddress === '' ) {
+			setModal({
+				type: _ModalTypes.error,
+				title: `Cannot fetch router address`,
+				details: [
+					`Stage: preparetx_swap`,
+					`User address: ${_userAddress}`,
+					`Wallet address: ${walletToUse}`,
+					`Content tokens: ${JSON.stringify(contentTokens)}`,
+				]
+			});
+			return;
+		}
+
 		createAdvancedLoaderCreate(_currentChain, _web3, _userAddress);
 
-		try { await preparetx_approve(_currentChain, _web3, _userAddress); } catch (ignored) { return; }
-
 		let txBatch: Array<{ target: Array<string>, value: Array<string>, data: Array<string> }> = [];
+
+		try { await transferCheckoutTokensToMaster(_currentChain, _web3, _userAddress); } catch(ignored) { return; }
+		try {
+			const approveTx = await preparetx_approve(_currentChain, _web3, _userAddress);
+			if ( approveTx ) {
+				txBatch = [
+					...txBatch,
+					approveTx
+				]
+			}
+		} catch (ignored) { return; }
 		try {
 			const swapTx = await preparetx_swap(_currentChain, _web3, _userAddress);
 			txBatch = [
@@ -883,7 +1079,6 @@ export default function BatchSwap() {
 		} catch (ignored) { return; }
 
 		updateAllBalances(_userAddress);
-		updateAllBalances(walletToUse);
 
 		unsetModal();
 
@@ -916,9 +1111,7 @@ export default function BatchSwap() {
 			) {
 				return true;
 			}
-
-			const foundNoCovertedValue = contentTokens.find((item) => { return !item.convertedValue });
-			if ( foundNoCovertedValue ) { return true; }
+			return false;
 		}
 
 		if ( isSubmitDisabled() ) {
