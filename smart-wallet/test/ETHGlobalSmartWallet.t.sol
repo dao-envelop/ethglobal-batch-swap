@@ -151,4 +151,19 @@ contract ETHGlobalSmartWalletTest is Test {
         assertEq(erc20_1.balanceOf(walletAddress), 0);
         assertEq(erc20_1.balanceOf(receiver), sendERC20Amount);
     }
+
+    function test_initialize_again() public {
+        ETHGlobalSmartWallet.InitParams memory initData = ETHGlobalSmartWallet.InitParams(
+            address(this),
+            "ETHGlobal Smart Wallet AGAIN",
+            "ETHGLW",
+            "https://apidev.envelop.is/meta/",
+            new address[](0),
+            new bytes32[](0),
+            new uint256[](0),
+            ""
+        );
+        vm.expectRevert();
+        wallet.initialize(initData);
+    }
 }
