@@ -116,6 +116,55 @@ def wallets(
         return Response(status_code=e.code, media_type='application/json', content=e.fp.read().decode('utf-8'))
     except Exception as e:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"{e}")
+@app.get("/balance/{chain_id}/{user_address}")
+def wallets(
+    chain_id: str,
+    user_address: str,
+):
+
+    if API_1INCH_TOKEN is None:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"No auth key")
+    if API_1INCH_BASE_URL is None:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"No remote api base url")
+    if chain_id not in SUPPORTED_CHAINS:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Unsupported chain")
+
+    API_1INCH_BALANCE_POSTFIX = 'balance/v1.2'
+    WALLET_NAME = 'Smart wallet token'
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+        'Accept': 'application/json',
+        'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+        'Accept-Encoding': 'none',
+        'Accept-Language': 'en-US,en;q=0.8',
+        'Connection': 'keep-alive',
+        'Authorization': f"Bearer {API_1INCH_TOKEN}"
+    }
+
+    url =f"{API_1INCH_BASE_URL.strip('/')}/{API_1INCH_BALANCE_POSTFIX}/{chain_id}/balances/{user_address}"
+
+    try:
+        req = urllib.request.Request(url, None, headers)
+        resp = urllib.request.urlopen(req)
+        data = resp.read()
+        data_parsed = json.loads(data)
+
+        non_empty_tokens = list(filter(lambda x: data_parsed[x] != '0', data_parsed.keys()))
+
+        output = []
+        for item in non_empty_tokens:
+            if item == '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee':
+                output.append({ 'address': '0x0000000000000000000000000000000000000000', 'amount': data_parsed[item] })
+            else:
+                output.append({ 'address': item, 'amount': data_parsed[item] })
+
+        return output
+
+    except urllib.error.HTTPError as e:
+        return Response(status_code=e.code, media_type='application/json', content=e.fp.read().decode('utf-8'))
+    except Exception as e:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"{e}")
 
 
 @app.get("/")
