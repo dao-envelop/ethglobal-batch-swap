@@ -296,7 +296,7 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 								requestERC20Token(item.tokenAddress);
 							}
 
-							if ( !foundToken.decimals ) { return false; }
+							if ( foundToken && !foundToken.decimals ) { return false; }
 
 							if ( inputHideSmallAmounts ) {
 								return tokenToFloat(item.amount, foundToken.decimals).gt(SMALL_AMOUNT);
