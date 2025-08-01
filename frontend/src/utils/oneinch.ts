@@ -101,19 +101,26 @@ export const getSwapDataForToken = async (chainId: number, fromTokenAddress: str
 	const toTokenAddressToUse = toTokenAddress === '0x0000000000000000000000000000000000000000' ? '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' : toTokenAddress;
 	const url = combineURLs(BASE_URL, `/swapproxy/${chainId}/swap?src=${fromTokenAddressToUse}&dst=${toTokenAddressToUse}&amount=${amount}&from=${walletAddress}&origin=${walletAddress}&receiver=${receiver}&slippage=${1}&disableEstimate=${true}`);
 
+	let resp: any;
 	let respParsed: any;
 	try {
-		const resp = await fetch(url);
+		resp = await fetch(url);
 
-		if ( resp && resp.ok ) {
+		if ( resp ) {
 			respParsed = await resp.json();
 		}
 	} catch (e) {
 		console.log('Cannot load swap calldata', e);
+		throw new Error(`Cannot load swap calldata: ${e}`);
 	}
 
 	if ( !respParsed ) {
 		console.log('Cannot load swap calldata');
+		throw new Error(`Cannot load swap calldata`);
+	}
+
+	if ( !resp.ok ) {
+		throw new Error(`Cannot load swap calldata: ${respParsed.error}: ${respParsed.description}`);
 	}
 
 	return respParsed;

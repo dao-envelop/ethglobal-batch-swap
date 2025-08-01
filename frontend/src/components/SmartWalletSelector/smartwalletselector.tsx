@@ -84,6 +84,7 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 		erc20List,
 		ERC20Balances,
 		updateERC20Balance,
+		updateAllBalances,
 	} = useContext(ERC20Context);
 	const {
 		setModal,
@@ -211,6 +212,21 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 				url: combineURLs(_currentChain.explorerBaseUrl, `/tx/${txResp.transactionHash}`)
 			}],
 		});
+
+		setTimeout(() => {
+			getUserSmartWalletsFromAPI(_currentChain.chainId, _userAddress)
+				.then((data) => {
+					if ( onWalletListChange ) { onWalletListChange(data); }
+					if ( data.length ) {
+						console.log('data', data);
+						setNoWallets(false);
+						setUserSmartWallets(data);
+					}
+				})
+				.catch((e) => {
+					console.log('Cannot load user wallets', e);
+				})
+		}, 10*1000)
 	}
 
 	const getHideSmallAmountButton = () => {
@@ -328,6 +344,8 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 				onClick={async () =>{
 					if ( !currentChain ) { return; }
 					if ( selectedWallet === '' ) { return }
+					updateAllBalances(userAddress || '');
+					updateAllBalances(selectedWallet);
 					getSmartWalletBalances(currentChain.chainId, selectedWallet)
 						.then((data) => {
 							setSmartWalletBalances((prevState) => {

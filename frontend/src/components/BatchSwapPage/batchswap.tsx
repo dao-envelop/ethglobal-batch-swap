@@ -948,10 +948,14 @@ export default function BatchSwap() {
 			status: _AdvancedLoadingStatus.complete
 		});
 
-		return {
-			target: [ inputCheckoutTokenAddress ],
-			data: [ approveTx.data ],
-			value: [ approveTx.value ],
+		if ( approveTx ) {
+			return {
+				target: [ inputCheckoutTokenAddress ],
+				data: [ approveTx.data ],
+				value: [ approveTx.value ],
+			}
+		} else {
+			return null;
 		}
 	}
 	const preparetx_swap = async (_currentChain: ChainType, _web3: Web3, _userAddress: string) => {
@@ -1014,7 +1018,6 @@ export default function BatchSwap() {
 
 		updateStepAdvancedLoader({
 			id: 'preparetx_swap',
-			text: `Approve source token. Prepare tx`,
 			status: _AdvancedLoadingStatus.complete,
 			current: contentTokens.length,
 		});
@@ -1121,6 +1124,7 @@ export default function BatchSwap() {
 		} catch (ignored) { return; }
 
 		updateAllBalances(_userAddress);
+		updateAllBalances(walletToUse);
 
 		unsetModal();
 
