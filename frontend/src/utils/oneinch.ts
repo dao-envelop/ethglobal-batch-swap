@@ -39,7 +39,8 @@ export const fetchAllowanceForToken = async (chainId: number, tokenAddress: stri
 		throw new Error('No proxy base url in .env');
 	}
 
-	const url = combineURLs(BASE_URL, `/swapproxy/${chainId}/approve/allowance?tokenAddress=${tokenAddress}&walletAddress=${walletAddress}`);
+	const tokenAddressToUse = tokenAddress === '0x0000000000000000000000000000000000000000' ? '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' : tokenAddress;
+	const url = combineURLs(BASE_URL, `/swapproxy/${chainId}/approve/allowance?tokenAddress=${tokenAddressToUse}&walletAddress=${walletAddress}`);
 
 	let respParsed: any;
 	try {
@@ -96,7 +97,9 @@ export const getSwapDataForToken = async (chainId: number, fromTokenAddress: str
 	}
 
 	const receiver = toWalletAddress || walletAddress;
-	const url = combineURLs(BASE_URL, `/swapproxy/${chainId}/swap?src=${fromTokenAddress}&dst=${toTokenAddress}&amount=${amount}&from=${walletAddress}&origin=${walletAddress}&receiver=${receiver}&slippage=${1}&disableEstimate=${true}`);
+	const fromTokenAddressToUse = fromTokenAddress === '0x0000000000000000000000000000000000000000' ? '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' : fromTokenAddress;
+	const toTokenAddressToUse = toTokenAddress === '0x0000000000000000000000000000000000000000' ? '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' : toTokenAddress;
+	const url = combineURLs(BASE_URL, `/swapproxy/${chainId}/swap?src=${fromTokenAddressToUse}&dst=${toTokenAddressToUse}&amount=${amount}&from=${walletAddress}&origin=${walletAddress}&receiver=${receiver}&slippage=${1}&disableEstimate=${true}`);
 
 	let respParsed: any;
 	try {

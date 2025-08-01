@@ -597,6 +597,9 @@ export default function BatchSwap() {
 		return null;
 	}
 	const isDistributionSumEquals100 = (_contentTokens: Array<ContentTokenRowType>) => {
+		const zeroPercent =_contentTokens.find((item) => { return new BigNumber(item.percent).eq(0) });
+		if ( zeroPercent ) { return false; }
+
 		const sumPercent = _contentTokens.reduce((acc, item) => {
 			const percentToAdd = new BigNumber(item.percent);
 			if ( percentToAdd.isNaN() ) { return acc }

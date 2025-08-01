@@ -67,7 +67,7 @@ export default function TokenAmounts(props: TokenAmountsProps) {
 		recipients
 	} = props;
 
-	const [ walletBalancesBlockOpened, setWalletBalancesBlockOpened ] = useState(false);
+	const [ walletBalancesBlockOpened, setWalletBalancesBlockOpened ] = useState(true);
 
 	const transferNativeTokenSubmit = async (item: CollateralItem) => {
 
