@@ -1255,7 +1255,21 @@ export default function BatchSwap() {
 			{ getCheckoutSumBlock() }
 			{ getContentTokensBlock() }
 
-			{ getSubmitBtn() }
+			<div className="row">
+					<div className="col-md-9 pl-md-6 mb-2">
+						{ getSubmitBtn() }
+					</div>
+					<div className="col-md-3 pl-md-6">
+						<button
+							className={`btn btn-lg btn-yellow w-100`}
+							onClick={async () => {
+								setContentTokens([]);
+								setInputCheckoutTokenAddress('');
+								setInputCheckoutTokenAmount('');
+							}}
+						>Clear</button>
+					</div>
+			</div>
 
 		</div>
 		</main>
