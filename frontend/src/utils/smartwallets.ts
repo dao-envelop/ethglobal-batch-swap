@@ -94,10 +94,12 @@ export const getUserSmartWalletsFromAPI = async ( chainId: number, userAddress: 
 		console.log('Cannot load user wallets');
 	}
 
+	console.log('respParsed', respParsed);
 	return respParsed.map((item: any) => {
 		return {
 			contractAddress: item.asset_contract.address,
-			name: item.name
+			name: item.name,
+			image: item.image_url
 		};
 	});
 

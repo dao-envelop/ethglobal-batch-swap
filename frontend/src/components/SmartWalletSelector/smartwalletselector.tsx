@@ -35,6 +35,7 @@ import TokenAmounts from "../TokenAmounts";
 import CopyToClipboard from "react-copy-to-clipboard";
 
 import icon_i_copy          from '../../static/pics/icons/i-copy.svg';
+import icon_i_reload        from '../../static/pics/loader-blue.svg';
 
 import {
 	createSmartWallet,
@@ -52,6 +53,7 @@ type SmartWalletType = {
 	contractAddress: string,
 	name?: string,
 	symbol?: string,
+	image?: string,
 }
 type SavedSmartWalletType = {
 	chainId: number,
@@ -131,6 +133,7 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 			.then((data) => {
 				if ( onWalletListChange ) { onWalletListChange(data); }
 				if ( data.length ) {
+					console.log('data', data);
 					setNoWallets(false);
 					setUserSmartWallets(data);
 				}
@@ -273,7 +276,7 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 		if ( selectedWallet === '' ) { return null; }
 
 		return (
-			<div className="col-md-6 mb-5 mb-md-0">
+			<div className="col-md-5 mb-5 mb-md-0">
 				{ getHideSmallAmountButton() }
 				<TokenAmounts
 					walletAddress={ selectedWallet }
@@ -352,6 +355,7 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 						})
 				}}
 			>
+				<img src={ icon_i_reload }/>
 				<span className="ml-2">Update balances</span>
 			</button>
 			</div>
@@ -363,7 +367,19 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 	const getSmartWalleLabel = (item: SmartWalletType) => {
 		return item.contractAddress;
 	}
+	const getSmartWalletImage = () => {
+		if ( selectedWallet === '' ) { return null; }
+		const foundWallet = userSmartWallets.find((item) => { return item.contractAddress.toLowerCase() === selectedWallet.toLowerCase() });
+		if ( !foundWallet || !foundWallet.image ) { return null; }
 
+		return (
+			<>
+			<div className="col-md-12 mb-5 mb-md-0">
+				<img style={{ width: '50%' }} src={ foundWallet.image } />
+			</div>
+			</>
+		)
+	}
 	return (
 		<div className="c-wrap">
 
@@ -427,6 +443,8 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 
 					{ getCopyBtn() }
 
+					{ getSmartWalletImage() }
+
 					<div className="d-inline-block mr-2 my-3">
 						<button
 							className="btn btn-outline"
@@ -469,7 +487,6 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 						>Create smart wallet</button>
 					</div>
 				</div>
-
 				{ getWalletBalancesBlock() }
 			</div>
 		</div>
