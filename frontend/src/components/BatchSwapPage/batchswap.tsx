@@ -61,8 +61,6 @@ type ContentTokenRowType = {
 
 export default function BatchSwap() {
 
-	const MAX_CONTENT_TOKENS = 6;
-
 	const {
 		userAddress,
 		currentChain,
@@ -360,8 +358,6 @@ export default function BatchSwap() {
 
 		setSwapError('');
 
-		if ( contentTokens.length >= MAX_CONTENT_TOKENS ) { return; }
-
 		const foundContentTokens = contentTokens.find((item) => {
 			return item.address.toLowerCase() === address.toLowerCase()
 		});
@@ -407,7 +403,6 @@ export default function BatchSwap() {
 	const isAddContentTokensDisabled = () => {
 		if ( inputContentTokenAddress === '' ) { return true; }
 		if ( !Web3.utils.isAddress(inputContentTokenAddress) ) { return true; }
-		if ( contentTokens.length >= MAX_CONTENT_TOKENS ) { return true; }
 		return false;
 	}
 	const getContentTokenAmountWrapper = (item: ContentTokenRowType) => {
@@ -724,10 +719,6 @@ export default function BatchSwap() {
 							})
 							.map((item, idx) => { return getContentTokensRow(item, idx + 1) })
 					}
-				</div>
-
-				<div className="text-right mt-2">
-					<b>{ contentTokens.length }</b> / <span className="text-muted">{ MAX_CONTENT_TOKENS } assets</span>
 				</div>
 
 			</div>

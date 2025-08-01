@@ -174,22 +174,6 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 			return;
 		}
 
-		const savedWallets: Array<SavedSmartWalletType> = JSON.parse(localStorageGet('savedsmartwallets') || '[]');
-		localStorageSet('savedsmartwallets', JSON.stringify(
-			[
-				...savedWallets.filter((item) => {
-					return item.chainId !== currentChain?.chainId ||
-						item.userAddress !== userAddress ||
-						item.contractAddress.toLowerCase() !== txResp.events.Initialized.address.toLowerCase()
-				}),
-				{
-					chainId: currentChain?.chainId,
-					userAddress: userAddress,
-					contractAddress: txResp.events.Initialized.address,
-				}
-			]
-		));
-
 		unsetModal();
 		const smartWalletsUpdated = [
 			...userSmartWallets.filter((item) => { return item.contractAddress.toLowerCase() !== txResp.events.Initialized.address.toLowerCase() }),
@@ -479,9 +463,8 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 								}
 
 								if ( !_web3 || !_userAddress || !_currentChain ) { return; }
-								const isMultisig = localStorageGet('authMethod').toLowerCase() === 'safe';
 
-								createWalletSubmit(_currentChain, _web3, _userAddress, isMultisig);
+								createWalletSubmit(_currentChain, _web3, _userAddress);
 
 							}}
 						>Create smart wallet</button>
