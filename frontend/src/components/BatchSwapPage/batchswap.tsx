@@ -1246,7 +1246,6 @@ export default function BatchSwap() {
 
 			<SmartWalletSelector
 				onWalletSelect={(wallet) => {
-					console.log('wallet selected', wallet);
 					setWalletToUse(wallet);
 				}}
 				showError={ showError && walletToUse === '' }

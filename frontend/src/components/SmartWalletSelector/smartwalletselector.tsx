@@ -85,6 +85,7 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 		ERC20Balances,
 		updateERC20Balance,
 		updateAllBalances,
+		requestERC20Token,
 	} = useContext(ERC20Context);
 	const {
 		setModal,
@@ -120,7 +121,6 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 
 	}, [ currentChain ]);
 	useEffect(() => {
-		console.log('wallet selector useEffect');
 		if ( !currentChain ) { return; }
 		if ( !userAddress ) { return; }
 
@@ -134,7 +134,6 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 			.then((data) => {
 				if ( onWalletListChange ) { onWalletListChange(data); }
 				if ( data.length ) {
-					console.log('data', data);
 					setNoWallets(false);
 					setUserSmartWallets(data);
 				}
@@ -218,7 +217,6 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 				.then((data) => {
 					if ( onWalletListChange ) { onWalletListChange(data); }
 					if ( data.length ) {
-						console.log('data', data);
 						setNoWallets(false);
 						setUserSmartWallets(data);
 					}
@@ -286,6 +284,7 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 						.filter((item) => {
 							if ( !currentChain ) { return true; }
 
+
 							let foundToken = [
 								chainTypeToERC20(currentChain),
 								...erc20List
@@ -294,6 +293,7 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 							});
 							if ( !foundToken ) {
 								foundToken = getNullERC20(item.tokenAddress);
+								requestERC20Token(item.tokenAddress);
 							}
 
 							if ( !foundToken.decimals ) { return false; }
