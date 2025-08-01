@@ -852,7 +852,7 @@ export default function BatchSwap() {
 				text: `Transferring ${ foundToken.symbol } to smart wallet`,
 			});
 
-			const amountToCheck = tokenToInt(new BigNumber(inputCheckoutTokenAmount), _currentChain.decimals);
+			const amountToCheck = tokenToInt(new BigNumber(inputCheckoutTokenAmount), foundToken.decimals);
 			const walletBalance = await fetchBalanceForToken(_currentChain.chainId, inputCheckoutTokenAddress, walletToUse);
 			const amountDiff = amountToCheck.minus(walletBalance);
 
@@ -861,16 +861,16 @@ export default function BatchSwap() {
 				if ( userBalance.lt(amountDiff) ) {
 					setModal({
 						type: _ModalTypes.error,
-						title: `Not enough ${_currentChain.symbol}`,
+						title: `Not enough ${foundToken.symbol}`,
 						details: [
 							`Stage: transferCheckoutTokensToMaster`,
-							`Token ${_currentChain.symbol}: ${inputCheckoutTokenAddress}`,
+							`Token ${foundToken.symbol}: ${inputCheckoutTokenAddress}`,
 							`User address: ${_userAddress}`,
 							`Wallet address: ${walletToUse}`,
-							`Amount to send: ${tokenToFloat(amountToCheck, _currentChain.decimals).toString()} (${amountToCheck})`,
-							`Balance diff: ${tokenToFloat(amountDiff, _currentChain.decimals).toString()} (${amountDiff})`,
-							`User balance: ${tokenToFloat(userBalance, _currentChain.decimals).toString()} (${userBalance})`,
-							`Smart wallet balance: ${tokenToFloat(walletBalance, _currentChain.decimals).toString()} (${walletBalance})`,
+							`Amount to send: ${tokenToFloat(amountToCheck, foundToken.decimals).toString()} (${amountToCheck})`,
+							`Balance diff: ${tokenToFloat(amountDiff, foundToken.decimals).toString()} (${amountDiff})`,
+							`User balance: ${tokenToFloat(userBalance, foundToken.decimals).toString()} (${userBalance})`,
+							`Smart wallet balance: ${tokenToFloat(walletBalance, foundToken.decimals).toString()} (${walletBalance})`,
 						]
 					});
 					throw new Error();
@@ -881,16 +881,16 @@ export default function BatchSwap() {
 				} catch(e: any) {
 					setModal({
 						type: _ModalTypes.error,
-						title: `Cannot transfer ${_currentChain.symbol}`,
+						title: `Cannot transfer ${foundToken.symbol}`,
 						details: [
 							`Stage: transferCheckoutTokensToMaster`,
-							`Token ${_currentChain.symbol}: ${inputCheckoutTokenAddress}`,
+							`Token ${foundToken.symbol}: ${inputCheckoutTokenAddress}`,
 							`User address: ${_userAddress}`,
 							`Wallet address: ${walletToUse}`,
-							`Amount to send: ${tokenToFloat(amountToCheck, _currentChain.decimals).toString()} (${amountToCheck})`,
-							`Balance diff: ${tokenToFloat(amountDiff, _currentChain.decimals).toString()} (${amountDiff})`,
-							`User balance: ${tokenToFloat(userBalance, _currentChain.decimals).toString()} (${userBalance})`,
-							`Smart wallet balance: ${tokenToFloat(walletBalance, _currentChain.decimals).toString()} (${walletBalance})`,
+							`Amount to send: ${tokenToFloat(amountToCheck, foundToken.decimals).toString()} (${amountToCheck})`,
+							`Balance diff: ${tokenToFloat(amountDiff, foundToken.decimals).toString()} (${amountDiff})`,
+							`User balance: ${tokenToFloat(userBalance, foundToken.decimals).toString()} (${userBalance})`,
+							`Smart wallet balance: ${tokenToFloat(walletBalance, foundToken.decimals).toString()} (${walletBalance})`,
 							'',
 							e.message || e,
 						]
