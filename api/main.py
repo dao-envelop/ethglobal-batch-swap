@@ -94,127 +94,6 @@ def swapproxy(
         return Response(status_code=e.code, media_type='application/json', content=e.fp.read().decode('utf-8'))
     except Exception as e:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"{e}")
-# @app.get("/fusion/getquote/{chain_id}")
-# def fusion_getquote(
-#     request: Request,
-#     chain_id: str,
-# ):
-
-#     if API_1INCH_TOKEN is None:
-#         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"No auth key")
-#     if API_1INCH_BASE_URL is None:
-#         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"No remote api base url")
-#     if chain_id not in SUPPORTED_CHAINS:
-#         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Unsupported chain")
-
-#     API_1INCH_SWAP_POSTFIX = 'fusion/quoter/v2.0'
-
-#     params = request.query_params
-#     url =f"{API_1INCH_BASE_URL.strip('/')}/{API_1INCH_SWAP_POSTFIX}/{chain_id}/quote/receive?{params}"
-
-#     headers = {
-#         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
-#         'Accept': 'application/json',
-#         'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-#         'Accept-Encoding': 'none',
-#         'Accept-Language': 'en-US,en;q=0.8',
-#         'Connection': 'keep-alive',
-#         'Authorization': f"Bearer {API_1INCH_TOKEN}"
-#     }
-
-#     try:
-#         req = urllib.request.Request(url, None, headers)
-#         resp = urllib.request.urlopen(req)
-#         data = resp.read()
-#         info = resp.info()
-#         logger.debug('response: {}'.format(data))
-#         return Response( content=data, media_type=info.get_content_type() )
-#     except urllib.error.HTTPError as e:
-#         return Response(status_code=e.code, media_type='application/json', content=e.fp.read().decode('utf-8'))
-#     except Exception as e:
-#         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"{e}")
-# @app.post("/fusion/build/{chain_id}")
-# async def fusion_build(
-#     request: Request,
-#     chain_id: str,
-# ):
-
-#     if API_1INCH_TOKEN is None:
-#         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"No auth key")
-#     if API_1INCH_BASE_URL is None:
-#         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"No remote api base url")
-#     if chain_id not in SUPPORTED_CHAINS:
-#         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Unsupported chain")
-
-#     API_1INCH_SWAP_POSTFIX = 'fusion/quoter/v2.0'
-
-#     params = request.query_params
-#     data = await request.json()
-#     url =f"{API_1INCH_BASE_URL.strip('/')}/{API_1INCH_SWAP_POSTFIX}/{chain_id}/quote/build?{params}"
-
-#     headers = {
-#         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
-#         'Accept': 'application/json',
-#         'Content-Type': 'application/json',
-#         'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-#         'Accept-Encoding': 'none',
-#         'Accept-Language': 'en-US,en;q=0.8',
-#         'Connection': 'keep-alive',
-#         'Authorization': f"Bearer {API_1INCH_TOKEN}"
-#     }
-
-#     try:
-#         req = urllib.request.Request(url, json.dumps(data).encode('utf-8'), headers)
-#         resp = urllib.request.urlopen(req)
-#         data = resp.read()
-#         info = resp.info()
-#         logger.debug('response: {}'.format(data))
-#         return Response( content=data, media_type=info.get_content_type() )
-#     except urllib.error.HTTPError as e:
-#         return Response(status_code=e.code, media_type='application/json', content=e.fp.read().decode('utf-8'))
-#     except Exception as e:
-#         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"{e}")
-# @app.post("/fusion/submit/{chain_id}")
-# async def fusion_submit(
-#     request: Request,
-#     chain_id: str,
-# ):
-
-#     if API_1INCH_TOKEN is None:
-#         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"No auth key")
-#     if API_1INCH_BASE_URL is None:
-#         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"No remote api base url")
-#     if chain_id not in SUPPORTED_CHAINS:
-#         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Unsupported chain")
-
-#     API_1INCH_SWAP_POSTFIX = 'fusion/quoter/v2.0'
-
-#     data = await request.json()
-#     url =f"{API_1INCH_BASE_URL.strip('/')}/{API_1INCH_SWAP_POSTFIX}/{chain_id}/quote/submit"
-
-#     headers = {
-#         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
-#         'Accept': 'application/json',
-#         'Content-Type': 'application/json',
-#         'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-#         'Accept-Encoding': 'none',
-#         'Accept-Language': 'en-US,en;q=0.8',
-#         'Connection': 'keep-alive',
-#         'Authorization': f"Bearer {API_1INCH_TOKEN}"
-#     }
-
-#     try:
-#         req = urllib.request.Request(url, json.dumps(data).encode('utf-8'), headers)
-#         resp = urllib.request.urlopen(req)
-#         data = resp.read()
-#         info = resp.info()
-#         logger.debug('response: {}'.format(data))
-#         return Response( content=data, media_type=info.get_content_type() )
-#     except urllib.error.HTTPError as e:
-#         return Response(status_code=e.code, media_type='application/json', content=e.fp.read().decode('utf-8'))
-#     except Exception as e:
-#         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"{e}")
-
 @app.post("/fusion/{method_name:path}")
 @app.get("/fusion/{method_name:path}")
 async def fusion_build(
@@ -222,26 +101,20 @@ async def fusion_build(
     method_name: str,
 ):
 
-    print('start')
 
     if API_1INCH_TOKEN is None:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"No auth key")
     if API_1INCH_BASE_URL is None:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"No remote api base url")
-    # if chain_id not in SUPPORTED_CHAINS:
-    #     raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Unsupported chain")
 
     params = request.query_params
-    print('params', params)
     data = None
     try:
         data = await request.json()
         data = json.dumps(data).encode('utf-8')
     except Exception:
         pass
-    print('data', data)
     url =f"{API_1INCH_BASE_URL.strip('/')}/fusion/{method_name}?{params}"
-    print('url', url)
 
 
     headers = {
@@ -361,7 +234,7 @@ def wallets_amounts(
     except Exception as e:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"{e}")
 @app.get("/balance/{chain_id}/{user_address}/{token_address}")
-def wallets(
+def token_balance(
     chain_id: str,
     user_address: str,
     token_address: str,
@@ -403,6 +276,48 @@ def wallets(
         return Response(status_code=e.code, media_type='application/json', content=e.fp.read().decode('utf-8'))
     except Exception as e:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"{e}")
+@app.get("/token/{chain_id}/{token_address}")
+def token(
+    chain_id: str,
+    token_address: str,
+):
+
+    if API_1INCH_TOKEN is None:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"No auth key")
+    if API_1INCH_BASE_URL is None:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"No remote api base url")
+    if chain_id not in SUPPORTED_CHAINS:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Unsupported chain")
+
+    API_1INCH_BALANCE_POSTFIX = 'token/v1.4'
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+        'Accept-Encoding': 'none',
+        'Accept-Language': 'en-US,en;q=0.8',
+        'Connection': 'keep-alive',
+        'Authorization': f"Bearer {API_1INCH_TOKEN}"
+    }
+
+    address_to_check = token_address if token_address != '0x0000000000000000000000000000000000000000' else '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+    url = f"{API_1INCH_BASE_URL.strip('/')}/{API_1INCH_BALANCE_POSTFIX}/{chain_id}/custom/{token_address}"
+
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        resp = urllib.request.urlopen(req)
+        data = resp.read()
+        data_parsed = json.loads(data)
+
+        return data_parsed
+
+    except urllib.error.HTTPError as e:
+        return Response(status_code=e.code, media_type='application/json', content=e.fp.read().decode('utf-8'))
+    except Exception as e:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"{e}")
+
 # ---------- END ORACLE LIKE THINGS ----------
 
 @app.get("/")
