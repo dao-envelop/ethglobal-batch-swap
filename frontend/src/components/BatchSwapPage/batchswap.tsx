@@ -742,21 +742,21 @@ export default function BatchSwap() {
 		loaderStages.push({
 			id: 'preparetx_approve',
 			sortOrder: 20,
-			text: 'Approve source token',
+			text: 'Prepare approve tx',
 			status: _AdvancedLoadingStatus.queued
 		});
 
 		loaderStages.push({
 			id: 'preparetx_swap',
 			sortOrder: 30,
-			text: 'Prepare batch of txs: swap tokens',
+			text: 'Prepare swap tx',
 			total: contentTokens.length,
 			status: _AdvancedLoadingStatus.queued
 		});
 		loaderStages.push({
 			id: 'executetx_swap',
 			sortOrder: 31,
-			text: `Executing batch of swaps`,
+			text: `Executing batch of txs`,
 			status: _AdvancedLoadingStatus.queued
 		});
 
@@ -975,14 +975,17 @@ export default function BatchSwap() {
 		for (let idx = 0; idx < contentTokens.length; idx++) {
 			const item = contentTokens[idx];
 
-			let foundERC20 = erc20List.find((iitem) => { return iitem.contractAddress.toLowerCase() === item.address.toLowerCase() });
+			let foundERC20 = [
+				chainTypeToERC20(_currentChain),
+				...erc20List
+			].find((iitem) => { return iitem.contractAddress.toLowerCase() === item.address.toLowerCase() });
 			if ( !foundERC20 ) {
 				foundERC20 = getNullERC20(item.address);
 			}
 
 			updateStepAdvancedLoader({
 				id: 'preparetx_swap',
-				text: `Approve source token. Prepare tx for (${foundERC20.symbol})`,
+				text: `Prepare swap tx: ${foundERC20.symbol}`,
 				status: _AdvancedLoadingStatus.loading,
 				current: idx+1,
 			});
@@ -1002,10 +1005,10 @@ export default function BatchSwap() {
 			} catch(e: any) {
 				setModal({
 					type: _ModalTypes.error,
-					title: `Cannot get swap calldata for ${foundCheckoutERC20.symbol}`,
+					title: `Cannot get swap calldata for ${foundERC20.symbol}`,
 					details: [
 						`Stage: preparetx_swap`,
-						`Token ${foundCheckoutERC20.symbol}: ${foundCheckoutERC20.contractAddress}`,
+						`Token ${foundERC20.symbol}: ${foundERC20.contractAddress}`,
 						`User address: ${_userAddress}`,
 						`Wallet address: ${walletToUse}`,
 						`Error: ${e}`
