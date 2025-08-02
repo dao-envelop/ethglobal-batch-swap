@@ -10,28 +10,22 @@ import {
 	useLocation,
 } from "react-router-dom";
 
-import {
-	BigNumber,
-	ChainType,
-	Web3,
-	connect,
-	disconnect as coredisconnect,
-	connectSilent,
-	getChainId,
-	getChainParamsAllFromAPI,
-	getUserAddress,
-	localStorageGet,
-	localStorageSet,
-	requestChainChange,
-	walletStateListener,
-	getNativeBalance,
-} from "@envelop/envelop-client-core";
-
 import config from '../../app.config.json';
 import {
 	InfoModalContext,
 	_ModalTypes
 } from "../InfoModalDispatcher";
+import Web3 from "web3";
+import { ChainType } from "../../utils/_types";
+import {
+	_getCacheItem,
+	_setCacheItem,
+	createContract,
+	localStorageGet,
+	localStorageRemove,
+	localStorageSet,
+	BigNumber
+} from "../../utils/utils";
 
 export type Web3ContextType = {
 	web3: Web3 | null | undefined,
@@ -62,6 +56,189 @@ export const Web3Context = React.createContext<Web3ContextType>({
 type Web3DispatcherProps= {
 	switchChainCallback?: (targetChainId: number) => void,
 	children: ReactNode
+}
+
+console.log('');
+export const CHAINS_DATA: Array<ChainType> = [
+	{
+		chainId: 42161,
+		name: "Arbitrum",
+		colorCode: "399fe6",
+		symbol: "ETH",
+		EIPPrefix: "ERC",
+		decimals: 18,
+		isTestNetwork: false,
+		explorerBaseUrl: "https://arbiscan.io/",
+		explorerName: "Arbiscan",
+		RPCUrl: "https://arbitrum.drpc.org",
+		networkIcon: require('../../static/pics/networks/42161.png'),
+		tokenIcon: require('../../static/pics/networks/42161.png'),
+	},
+];
+
+const _getRPCUrlFromConfig = async (chainId: number) => {
+	const foundChain = CHAINS_DATA.find((item: ChainType) => { return item.chainId === chainId });
+	if ( !foundChain ) { return undefined; }
+	_setCacheItem(`rpcUrl_${chainId}`, foundChain.RPCUrl);
+	return foundChain.RPCUrl;
+}
+/**
+ * Create web3 object only for reading data
+ * @param {number} chainId - id of network to connect
+ * @returns {Promise<Web3 | undefined>}> Web3 object which shoгld be passed to any function that interact with blockchain
+ */
+export const getDefaultWeb3 = async (chainId?: number): Promise<Web3 | null> => {
+
+	const chainIdToUse = chainId || 1;
+	let rpcUrl = await _getCacheItem(`rpcUrl_${chainIdToUse}`);
+
+	if ( !rpcUrl ) {
+		rpcUrl = await _getRPCUrlFromConfig(chainIdToUse);
+	}
+
+	return new Web3(rpcUrl);
+}
+
+/**
+ * Check if user already connect wallet and return web3 object without any actions from user
+ * If there is never was connection or wallet is locked return undefined
+ * @returns {Promise<Web3 | undefined>}> Web3 object which shoгld be passed to any function that interact with blockchain
+ */
+export const connectSilent = async (): Promise<Web3 | null> => {
+
+	if (
+		(window as any).ethereum &&
+		(window as any).ethereum._metamask
+	) {
+		if ( await (window as any).ethereum._metamask.isUnlocked() ) {
+			const _web3 = new Web3( (window as any).ethereum );
+			if ( !_web3 ) { return null; }
+
+			return _web3;
+		} else {
+			return null;
+		}
+	}
+
+	return null;
+}
+/**
+ * Open menu with various wallets, auth user and create web3 object
+ * @returns {Promise<Web3>}> Web3 object which should be passed to any function that interact with blockchain
+ */
+export const connect = async (): Promise<Web3 | null> => {
+
+	const beenLogged = await connectSilent();
+	if ( beenLogged ) { return beenLogged; }
+
+	const authMethod = localStorageGet('authMethod');
+	let web3 = null;
+
+	if (
+		authMethod.toLowerCase() === 'metamask' &&
+		(window as any).ethereum &&
+		(window as any).ethereum._metamask
+	) {
+		await (window as any).ethereum.request({ method: 'eth_requestAccounts' });
+		return new Web3( (window as any).ethereum );
+	}
+
+	return web3;
+}
+export const coredisconnect = () => {
+
+	const authMethod = localStorageGet('authMethod');
+
+	if ( authMethod.toLowerCase() === 'metamask' ) {
+		(window as any).ethereum.removeAllListeners();
+	} else {
+		const onboardStateUnsubscribe = _getCacheItem('onboardStateUnsubscribe');
+		if ( onboardStateUnsubscribe ) { onboardStateUnsubscribe(); }
+	}
+
+	for ( const item in localStorage ) {
+		if ( item.toLowerCase() === 'authmethod'       ) { localStorageRemove(item); }
+		if ( item.toLowerCase() === 'lastuseraddress'  ) { localStorageRemove(item); }
+		if ( item.toLowerCase().includes('walletlink') ) { localStorageRemove(item); }
+		if ( item.toLowerCase().includes('onboard.js') ) { localStorageRemove(item); }
+	}
+
+}
+/**
+ * Request wallet to change network
+ * NOTE: works only with metamask extension
+ */
+export const requestChainChange = async (chainId: number): Promise<boolean> => {
+
+	const authMethod = localStorageGet('authMethod');
+
+	if ( (window as any).onboard ) {
+		await (window as any).onboard.setChain({ chainId: '0x' + Number(chainId).toString(16) });
+		return true;
+	}
+
+	if (
+		authMethod.toLowerCase() === 'metamask' &&
+		(window as any).ethereum
+	) {
+		await (window as any).ethereum.request({
+			method: 'wallet_switchEthereumChain',
+			params: [{ chainId: '0x' + Number(chainId).toString(16) }],
+		})
+
+		return true;
+	}
+
+	return false;
+}
+
+export const walletStateListener = (cb: Function) => {
+
+	if ( (window as any).onboard ) {
+		const { onboardStateUnsubscribe } = (window as any).onboard.state.select('notifications').subscribe(cb);
+		_setCacheItem('onboardStateUnsubscribe', onboardStateUnsubscribe);
+		return;
+	}
+
+	const authMethod = localStorageGet('authMethod');
+
+	if ( authMethod.toLowerCase() === 'metamask' ) {
+		(window as any).ethereum.on('chainChanged',    () => { cb() });
+		(window as any).ethereum.on('accountsChanged', () => { cb() });
+		return;
+	}
+}
+
+/**
+ * Get address of user's wallet
+ * @param {Web3} web3 - Web3-object which used for blockchain calls
+ * @returns {Promise<string>}> Address of connected wallet
+ */
+export const getUserAddress = async (web3: Web3): Promise<string | undefined> => {
+	const accounts = await web3.eth.getAccounts();
+	if ( !accounts.length ) { return undefined; }
+	if ( accounts[0] === '' ) { return undefined; }
+	return accounts[0];
+}
+export const getChainId = async (web3: Web3): Promise<number | undefined> => {
+	const chainId = await web3.eth.getChainId();
+	return Number(chainId);
+}
+export const getNativeBalance = async (chainId: number, userAddress: string): Promise<BigNumber> => {
+	const web3 = await getDefaultWeb3(chainId);
+	if ( !web3 ) {
+		throw new Error('Cannot connect to blockchain');
+	}
+	return new BigNumber(await web3.eth.getBalance(userAddress));
+}
+
+export const transferERC20 = async (web3: Web3, contractAddress: string, userAddress: string, amount: BigNumber, addressTo: string) => {
+	const contract = await createContract(web3, '_erc20', contractAddress);
+
+	return contract.methods.transfer(addressTo, amount.toString()).send({ from: userAddress });
+}
+export const transferNativeTokens = async (web3: Web3, userAddress: string, amount: BigNumber, addressTo: string) => {
+	return web3.eth.sendTransaction({ from: userAddress, to: addressTo, value: amount.toString() });
 }
 
 export function Web3Dispatcher(props: Web3DispatcherProps) {
@@ -100,9 +277,8 @@ export function Web3Dispatcher(props: Web3DispatcherProps) {
 	useEffect(() => {
 
 		const fetchAvailableChains = async () => {
-			const chainsData = await getChainParamsAllFromAPI();
 			const chainsFromConfig = config.CHAIN_SPECIFIC_DATA;
-			setAvailableChains(chainsData.filter((item) => {
+			setAvailableChains(CHAINS_DATA.filter((item) => {
 				return !!chainsFromConfig.find((iitem) => {
 					return item.chainId === iitem.chainId
 				})
@@ -127,9 +303,8 @@ export function Web3Dispatcher(props: Web3DispatcherProps) {
 
 		let _availableChains = availableChains;
 		if ( !_availableChains.length ) {
-			const chainsData = await getChainParamsAllFromAPI();
 			const chainsFromConfig = config.CHAIN_SPECIFIC_DATA;
-			_availableChains = chainsData.filter((item) => {
+			_availableChains = CHAINS_DATA.filter((item) => {
 				return !!chainsFromConfig.find((iitem) => {
 					return item.chainId === iitem.chainId
 				})
@@ -241,9 +416,8 @@ export function Web3Dispatcher(props: Web3DispatcherProps) {
 
 				let _availableChains = availableChains;
 				if ( !_availableChains.length ) {
-					const chainsData = await getChainParamsAllFromAPI();
 					const chainsFromConfig = config.CHAIN_SPECIFIC_DATA;
-					_availableChains = chainsData.filter((item) => {
+					_availableChains = CHAINS_DATA.filter((item) => {
 						return !!chainsFromConfig.find((iitem) => {
 							return item.chainId === iitem.chainId
 						})
@@ -410,9 +584,8 @@ export function Web3Dispatcher(props: Web3DispatcherProps) {
 	const switchChain = async (targetChainId: number) => {
 		let _availableChains = availableChains;
 		if ( !_availableChains.length ) {
-			const chainsData = await getChainParamsAllFromAPI();
 			const chainsFromConfig = config.CHAIN_SPECIFIC_DATA;
-			_availableChains = chainsData.filter((item) => {
+			_availableChains = CHAINS_DATA.filter((item) => {
 				return !!chainsFromConfig.find((iitem) => {
 					return item.chainId === iitem.chainId
 				})
@@ -473,7 +646,7 @@ export function Web3Dispatcher(props: Web3DispatcherProps) {
 	const addChainToWallet = async (targetChainId: number) => {
 		if ( localStorageGet('authMethod').toLowerCase() !== 'metamask' ) { return; }
 
-		const _availableChains = await getChainParamsAllFromAPI();
+		const _availableChains = CHAINS_DATA
 		const foundChain = _availableChains.find((item) => { return item.chainId === targetChainId });
 		if ( !foundChain ) { console.log('No such chain', _availableChains, targetChainId); return; }
 

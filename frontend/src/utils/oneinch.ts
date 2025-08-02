@@ -2,7 +2,7 @@
 import {
 	BigNumber,
 	combineURLs
-} from "@envelop/envelop-client-core"
+} from "./utils";
 
 export const fetchBalanceForToken = async (chainId: number, tokenAddress: string, walletAddress: string): Promise<BigNumber> => {
 

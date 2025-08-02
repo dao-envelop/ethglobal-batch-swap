@@ -7,17 +7,7 @@ import {
 import default_token_preview from '../../static/pics/tb-nft-default.svg';
 import icon_loading          from '../../static/pics/loading.svg';
 import icon_send             from "../../static/pics/icons/i-send.svg";
-import default_icon          from '@envelop/envelop-client-core/static/pics/coins/_default.svg';
-import {
-	BigNumber,
-	CollateralItem,
-	_AssetType,
-	chainTypeToERC20,
-	combineURLs,
-	compactString,
-	getNullERC20,
-	tokenToFloat
-} from '@envelop/envelop-client-core';
+import default_icon          from '../../static/pics/coins/_default.svg';
 import {
 	_ModalTypes,
 	ERC20Context,
@@ -30,6 +20,23 @@ import {
 	prepareTxTransferERC20Token,
 	prepareTxTransferNativeToken,
 } from '../../utils/smartwallets';
+import {
+	_Asset,
+	_AssetType
+} from '../../utils/_types';
+import {
+	chainTypeToERC20,
+	combineURLs,
+	compactString,
+	getNullERC20,
+	tokenToFloat
+} from '../../utils/utils';
+
+export interface CollateralItem extends _Asset {
+	tokenId?: string,
+	amount?: BigNumber,
+	tokenImg?: string,
+}
 
 type TokenAmountsProps = {
 	walletAddress       : string,

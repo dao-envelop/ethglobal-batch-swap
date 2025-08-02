@@ -3,10 +3,9 @@ import React, {
 	useState
 } from 'react';
 
-import { ERC20Type }     from '@envelop/envelop-client-core';
-import default_icon      from '@envelop/envelop-client-core/static/pics/coins/_default.svg';
-
 import icon_i_arrow_down from '../../static/pics/icons/i-arrow-down.svg';
+import default_icon from '../../static/pics/coins/default.svg';
+import { ERC20Type } from '../../utils/_types';
 
 type CoinSelectorProps = {
 	tokens       : Array<ERC20Type>,

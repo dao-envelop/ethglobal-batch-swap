@@ -5,6 +5,8 @@ import React, {
 	useState
 } from "react";
 
+import Web3 from "web3";
+
 import {
 	_AdvancedLoadingStatus,
 	_ModalTypes,
@@ -13,23 +15,6 @@ import {
 	InfoModalContext,
 	Web3Context,
 } from "../../dispatchers";
-
-import {
-	addThousandSeparator,
-	BigNumber,
-	ChainType,
-	chainTypeToERC20,
-	combineURLs,
-	ERC20Type,
-	getChainId,
-	getNullERC20,
-	removeThousandSeparator,
-	tokenToFloat,
-	tokenToInt,
-	transferERC20,
-	transferNativeTokens,
-	Web3
-} from "@envelop/envelop-client-core";
 
 import SmartWalletSelector from "../SmartWalletSelector";
 import TippyWrapper from "../TippyWrapper";
@@ -50,6 +35,26 @@ import {
 	getSmartWalletBalances
 } from "../../utils/smartwallets";
 import InputWithOptions from "../InputWithOptions";
+import {
+	addThousandSeparator,
+	BigNumber,
+	chainTypeToERC20,
+	combineURLs,
+	getNullERC20,
+	removeThousandSeparator,
+	tokenToFloat,
+	tokenToInt
+} from "../../utils/utils";
+
+import {
+	ChainType,
+	ERC20Type
+} from "../../utils/_types";
+import {
+	getChainId,
+	transferERC20,
+	transferNativeTokens
+} from "../../dispatchers/Web3Dispatcher/web3dispatcher";
 
 type ContentTokenRowType = {
 	address: string,
@@ -1058,7 +1063,7 @@ export default function BatchSwap() {
 			// 	throw e;
 			// }
 
-			txResp = await tx.send({ from: userAddress, maxPriorityFeePerGas: null, maxFeePerGas: null });
+			txResp = await tx.send({ from: userAddress });
 
 		} catch(e: any) {
 			setModal({

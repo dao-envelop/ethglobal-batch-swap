@@ -5,10 +5,6 @@ import React, {
 	useState
 }  from 'react';
 
-import {
-	compactString,
-} from '@envelop/envelop-client-core';
-
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import Blockies            from 'react-blockies';
 
@@ -20,14 +16,14 @@ import {
 
 import TippyWrapper        from '../TippyWrapper';
 
-import config from '../../app.config.json';
 
-import default_icon         from '@envelop/envelop-client-core/static/pics/networks/_default.png';
-import icon_logo            from '../../static/pics/logo.svg';
-import icon_logo_mob        from '../../static/pics/logo-mob.svg';
+import default_icon         from '../../static/pics/networks/_default.png';
 import icon_i_copy          from '../../static/pics/icons/i-copy.svg';
 import icon_i_del           from '../../static/pics/i-del.svg';
 import icon_i_attention     from '../../static/pics/icons/i-warning.svg';
+import {
+	compactString
+} from '../../utils/utils';
 
 export default function Header() {
 

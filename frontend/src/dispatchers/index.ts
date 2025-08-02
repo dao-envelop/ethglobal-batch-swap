@@ -25,14 +25,6 @@ import {
 	InfoModalRenderer,
 } from './InfoModalDispatcher';
 
-import {
-	SubscriptionContextType,
-	SubscriptionDispatcher,
-	SubscriptionContext,
-	SubscriptionPopup,
-	SubscriptionRenderer,
-} from './SubscriptionDispatcher';
-
 export type {
     Web3ContextType,
 	ERC20ContextType,
@@ -41,8 +33,6 @@ export type {
 	AdvancedLoaderType,
 	AdvancedLoaderStageType,
 	InfoModalType,
-
-	SubscriptionContextType,
 }
 
 export {
@@ -59,9 +49,4 @@ export {
 	AdvancedLoaderRenderer,
 
 	InfoModalRenderer,
-
-	SubscriptionDispatcher,
-	SubscriptionContext,
-	SubscriptionPopup,
-	SubscriptionRenderer,
 }

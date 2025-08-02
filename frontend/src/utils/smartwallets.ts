@@ -1,13 +1,13 @@
+import Web3 from "web3";
 import {
-	BigNumber,
 	combineURLs,
-	createAuthToken,
 	createContract,
-	ERC20Balance,
 	getABI,
-	getDefaultWeb3,
-	Web3
-} from "@envelop/envelop-client-core";
+	BigNumber
+} from "./utils";
+import {
+	getDefaultWeb3
+} from "../dispatchers/Web3Dispatcher/web3dispatcher";
 
 export const createSmartWallet = async (web3: Web3, contractAddress: string, userAddress: string) => {
 
@@ -31,7 +31,7 @@ export const createSmartWallet = async (web3: Web3, contractAddress: string, use
 		throw e;
 	}
 
-	return tx.send({ from: userAddress, maxPriorityFeePerGas: null, maxFeePerGas: null });
+	return tx.send({ from: userAddress });
 
 }
 export const getSmartWalletBalances = async ( chainId: number, walletAddress: string ) => {
@@ -188,6 +188,6 @@ export const executeTxBatch = async (
 	// 	throw e;
 	// }
 
-	return tx.send({ from: userAddress, maxPriorityFeePerGas: null, maxFeePerGas: null });
+	return tx.send({ from: userAddress });
 
 }

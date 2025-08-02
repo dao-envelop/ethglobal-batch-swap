@@ -11,20 +11,6 @@ import {
 	Web3Context
 } from "../../dispatchers";
 import {
-	_AssetType,
-	BigNumber,
-	ChainType,
-	chainTypeToERC20,
-	combineURLs,
-	getChainId,
-	getNullERC20,
-	localStorageGet,
-	localStorageSet,
-	tokenToFloat,
-	Web3
-} from "@envelop/envelop-client-core";
-
-import {
 	getUserSmartWalletsFromAPI
 } from "../../utils/smartwallets";
 
@@ -37,10 +23,28 @@ import CopyToClipboard from "react-copy-to-clipboard";
 import icon_i_copy          from '../../static/pics/icons/i-copy.svg';
 import icon_i_reload        from '../../static/pics/loader-blue.svg';
 
+import Web3 from "web3";
+
 import {
 	createSmartWallet,
 	getSmartWalletBalances,
 } from "../../utils/smartwallets";
+import {
+	chainTypeToERC20,
+	combineURLs,
+	getNullERC20,
+	localStorageGet,
+	localStorageSet,
+	tokenToFloat
+} from "../../utils/utils";
+import {
+	_AssetType,
+	ChainType
+} from "../../utils/_types";
+
+import {
+	getChainId
+} from "../../dispatchers/Web3Dispatcher/web3dispatcher";
 
 type SmartWalletSelectorProps = {
 	onWalletSelect?: (e: string) => void,
@@ -54,13 +58,6 @@ type SmartWalletType = {
 	name?: string,
 	symbol?: string,
 	image?: string,
-}
-type SavedSmartWalletType = {
-	chainId: number,
-	userAddress: string,
-	contractAddress: string,
-	name?: string,
-	symbol?: string,
 }
 
 export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
@@ -144,7 +141,7 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 
 	}, [ currentChain, userAddress ]);
 
-	const createWalletSubmit = async (_currentChain: ChainType, _web3: Web3, _userAddress: string, isMultisig?: boolean) => {
+	const createWalletSubmit = async (_currentChain: ChainType, _web3: Web3, _userAddress: string) => {
 
 		if ( !smartWalletFactory ) {
 			unsetModal();
@@ -157,7 +154,7 @@ export default function SmartWalletSelector(props: SmartWalletSelectorProps) {
 
 		setLoading('Waiting for wallet');
 
-		let txResp;
+		let txResp: any;
 		try {
 			txResp = await createSmartWallet(_web3, smartWalletFactory, _userAddress);
 		} catch(e: any) {

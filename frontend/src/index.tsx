@@ -11,9 +11,6 @@ import {
 	InfoModalDispatcher,
 	Web3Dispatcher
 } from './dispatchers';
-import { CurrencyRateDispatcher } from './dispatchers/CurrencyRateDispatcher';
-
-console.log(`Envelop SDK v${require("@envelop/envelop-client-core/package.json").version}`);
 
 const container = document.getElementById('root');
 const root = createRoot(container!); // createRoot(container!) if you use TypeScript
@@ -23,9 +20,7 @@ root.render(
 			<InfoModalDispatcher>
 			<Web3Dispatcher>
 			<ERC20Dispatcher>
-			<CurrencyRateDispatcher>
 				<App />
-			</CurrencyRateDispatcher>
 			</ERC20Dispatcher>
 			</Web3Dispatcher>
 			</InfoModalDispatcher>

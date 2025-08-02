@@ -7,9 +7,6 @@ import {
 import CopyToClipboard from 'react-copy-to-clipboard';
 import SecretInput     from '../../components/SecretInput';
 import {
-	getStrHash,
-} from '@envelop/envelop-client-core';
-import {
 	InfoModalContext,
 	InfoModalType,
 	_ModalTypes
@@ -18,6 +15,7 @@ import {
 import i_external_green_sm from '../../static/pics/icons/i-external-green-sm.svg';
 import i_copy              from '../../static/pics/icons/i-copy.svg';
 import TippyWrapper from '../../components/TippyWrapper';
+import { getStrHash } from '../../utils/utils';
 
 export default function InfoModalRenderer(props: { modal: InfoModalType | undefined }) {
 
