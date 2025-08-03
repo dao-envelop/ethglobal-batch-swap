@@ -11,10 +11,7 @@ import "@openzeppelin/contracts/interfaces/IERC4906.sol";
 import "./Wallet.sol";
 import "./IWalletFactory.sol";
 
-contract ETHGlobalSmartWallet is 
-   Wallet, ERC721Upgradeable, 
-   IERC4906,  IERC1271
-{
+contract ETHGlobalSmartWallet is Wallet, ERC721Upgradeable, IERC4906, IERC1271 {
     using Strings for uint256;
     using Strings for uint160;
 
@@ -154,25 +151,18 @@ contract ETHGlobalSmartWallet is
         return nftSymbol;
     }
 
-     /**
+    /**
      * @dev Should return whether the signature provided is valid for the provided data
      * @param hash      Hash of the data to be signed
      * @param signature Signature byte array associated with `hash`
      */
-    function isValidSignature(bytes32 hash, bytes calldata signature) 
-        external 
-        view 
-        returns (bytes4 magicValue)
-    {
-        magicValue = 0x1626ba7e; 
-        (address signer,,) = ECDSA.tryRecover(
-            hash, 
-            signature
-        );
+    function isValidSignature(bytes32 hash, bytes calldata signature) external view returns (bytes4 magicValue) {
+        magicValue = 0x1626ba7e;
+        (address signer,,) = ECDSA.tryRecover(hash, signature);
 
         // TODO for future implementations next string logic could
         // be changed.
-        return signer == ownerOf(TOKEN_ID) ? magicValue : bytes4(0x00000000);
+        return signer == ownerOf(TOKEN_ID) ? magicValue : bytes4(0xffffffff);
     }
 
     function supportsInterface(bytes4 interfaceId)
