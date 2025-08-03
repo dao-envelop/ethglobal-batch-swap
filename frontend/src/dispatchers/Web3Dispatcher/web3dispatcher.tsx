@@ -58,7 +58,6 @@ type Web3DispatcherProps= {
 	children: ReactNode
 }
 
-console.log('');
 export const CHAINS_DATA: Array<ChainType> = [
 	{
 		chainId: 42161,
@@ -106,7 +105,9 @@ export const getDefaultWeb3 = async (chainId?: number): Promise<Web3 | null> => 
  */
 export const connectSilent = async (): Promise<Web3 | null> => {
 
+	const authMethod = localStorageGet('authMethod');
 	if (
+		authMethod.toLowerCase() === 'metamask' &&
 		(window as any).ethereum &&
 		(window as any).ethereum._metamask
 	) {
@@ -131,14 +132,13 @@ export const connect = async (): Promise<Web3 | null> => {
 	const beenLogged = await connectSilent();
 	if ( beenLogged ) { return beenLogged; }
 
-	const authMethod = localStorageGet('authMethod');
 	let web3 = null;
 
 	if (
-		authMethod.toLowerCase() === 'metamask' &&
 		(window as any).ethereum &&
 		(window as any).ethereum._metamask
 	) {
+		localStorageSet('authMethod', 'metamask');
 		await (window as any).ethereum.request({ method: 'eth_requestAccounts' });
 		return new Web3( (window as any).ethereum );
 	}
@@ -670,7 +670,7 @@ export function Web3Dispatcher(props: Web3DispatcherProps) {
 		coredisconnect();
 		setUserAddress(undefined);
 		setWeb3(undefined);
-		window.location.reload();
+		// window.location.reload();
 	}
 
 	return (
