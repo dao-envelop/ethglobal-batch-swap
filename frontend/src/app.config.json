@@ -4,7 +4,7 @@
 
 		{
 			"chainId": 42161,
-			"smartWalletFactory": "0xC396a63A67B7F569f76FB41501Ddc577E895e0A6",
+			"smartWalletFactory": "0xC832b1525Ff272a5Ce30901e0E5f2C71FA47C061",
 			"checkoutTokens": [
 				"0x0000000000000000000000000000000000000000",
 				"0x6314c31a7a1652ce482cffe247e9cb7c3f4bb9af",
