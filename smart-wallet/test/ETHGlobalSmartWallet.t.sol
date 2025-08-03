@@ -4,7 +4,7 @@ pragma solidity ^0.8.30;
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-import {Test, console} from "forge-std/Test.sol";
+import {Test, console2} from "forge-std/Test.sol";
 import "forge-std/console.sol";
 import "../src/ETHGlobalSmartWallet.sol";
 import {WalletFactory} from "../src/WalletFactory.sol";
@@ -192,15 +192,18 @@ contract ETHGlobalSmartWalletTest is Test {
         wallet.executeEncodedTxBatch(targets, valuesNew, dataArrayNew);
     }
 
-    // function test_checkSignature() public {
-    //     bytes32 digest = MessageHashUtils.toEthSignedMessageHash(
-    //         keccak256(abi.encode(address(this),0xfffffffffff)) // just any message
-    //     );
-    //     (uint8 v, bytes32 r, bytes32 s) = vm.sign(EOA_PRIVKEY, digest);
-    //     bytes memory signature = abi.encodePacked(r,s,v);
-    //     bytes4 result =  wallet.isValidSignature(digest, signature);
-    //     assertEq(result, bytes4(0xffffffff));
-    //     wallet.transferFrom(address(this), EOA, wallet.TOKEN_ID());
-    //     assertEq(result, MAGIC_VALUE);
-    // }
+    function test_checkSignature() public {
+        bytes32 digest = MessageHashUtils.toEthSignedMessageHash(
+            keccak256(abi.encode(address(this), 0xfffffffffff)) // just any message
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(EOA_PRIVKEY, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+        bytes4 result = wallet.isValidSignature(digest, signature);
+        console2.log(wallet.ownerOf(wallet.TOKEN_ID()));
+        assertEq(result, bytes4(0xffffffff));
+        wallet.transferFrom(address(this), EOA, wallet.TOKEN_ID());
+        result = wallet.isValidSignature(digest, signature);
+        console2.log(wallet.ownerOf(wallet.TOKEN_ID()));
+        assertEq(result, MAGIC_VALUE);
+    }
 }
