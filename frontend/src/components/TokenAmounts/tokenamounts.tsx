@@ -99,7 +99,6 @@ export default function TokenAmounts(props: TokenAmountsProps) {
 					`Token: ${item.contractAddress}`,
 					`User address: ${userAddress}`,
 					`Wallet address: ${walletAddress}`,
-					`Smart wallet balances: ${JSON.stringify(ERC20Balances.filter((item) => { return item.walletAddress.toLowerCase() === walletAddress.toLowerCase() }))}`,
 					'',
 					e.message || e,
 				]
@@ -114,13 +113,12 @@ export default function TokenAmounts(props: TokenAmountsProps) {
 		} catch(e: any) {
 			setModal({
 				type: _ModalTypes.error,
-				title: `Cannot create wallet`,
+				title: `Cannot transfer token`,
 				details: [
 					`Stage: execute_tx`,
 					`Token: ${item.contractAddress}`,
 					`User address: ${userAddress}`,
 					`Wallet address: ${walletAddress}`,
-					`Smart wallet balances: ${JSON.stringify(ERC20Balances.filter((item) => { return item.walletAddress.toLowerCase() === walletAddress.toLowerCase() }))}`,
 					'',
 					e.message || e,
 				]
@@ -228,7 +226,6 @@ export default function TokenAmounts(props: TokenAmountsProps) {
 					`Token: ${item.contractAddress}`,
 					`User address: ${userAddress}`,
 					`Wallet address: ${walletAddress}`,
-					`Smart wallet balances: ${JSON.stringify(ERC20Balances.filter((item) => { return item.walletAddress.toLowerCase() === walletAddress.toLowerCase() }))}`,
 					'',
 					e.message || e,
 				]
@@ -243,13 +240,12 @@ export default function TokenAmounts(props: TokenAmountsProps) {
 		} catch(e: any) {
 			setModal({
 				type: _ModalTypes.error,
-				title: `Cannot create wallet`,
+				title: `Cannot transfer token`,
 				details: [
 					`Stage: execute_tx`,
 					`Token: ${item.contractAddress}`,
 					`User address: ${userAddress}`,
 					`Wallet address: ${walletAddress}`,
-					`Smart wallet balances: ${JSON.stringify(ERC20Balances.filter((item) => { return item.walletAddress.toLowerCase() === walletAddress.toLowerCase() }))}`,
 					'',
 					e.message || e,
 				]

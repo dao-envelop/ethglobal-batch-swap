@@ -168,7 +168,7 @@ export const executeTxBatch = async (
 	data: Array<{ target: Array<string>, value: Array<string>, data: Array<string> }>,
 ) => {
 
-	const contract = await createContract(web3, 'wnftv2index', walletAddress);
+	const contract = await createContract(web3, 'smartwallet', walletAddress);
 	const argTargets = data.map((item) => { return item.target.flat() }).flat();
 	console.log('argTargets', argTargets);
 	const argValues = data.map((item) => { return item.value.flat() }).flat();
