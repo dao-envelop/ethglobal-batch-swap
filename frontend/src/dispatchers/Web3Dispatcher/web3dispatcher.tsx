@@ -232,6 +232,12 @@ export const getNativeBalance = async (chainId: number, userAddress: string): Pr
 	return new BigNumber(await web3.eth.getBalance(userAddress));
 }
 
+export const makeERC20Allowance = async (web3: Web3, contractAddress: string, userAddress: string, amount: BigNumber, addressTo: string) => {
+	const contract = await createContract(web3, '_erc20', contractAddress);
+
+	const parsedAmount = new BigNumber(amount).toString() === '-1' ? new BigNumber(10**50).toString() : new BigNumber(amount).toString();
+	return contract.methods.approve(addressTo, parsedAmount).send({ from: userAddress, maxPriorityFeePerGas: null, maxFeePerGas: null });
+}
 export const transferERC20 = async (web3: Web3, contractAddress: string, userAddress: string, amount: BigNumber, addressTo: string) => {
 	const contract = await createContract(web3, '_erc20', contractAddress);
 

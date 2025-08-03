@@ -1,8 +1,22 @@
 
+import { FusionSDK } from "@1inch/fusion-sdk";
 import {
 	BigNumber,
-	combineURLs
+	combineURLs,
+	createContract,
+	getABI
 } from "./utils";
+
+import Web3_4 from "web3-4";
+import { ERC20Type } from "./_types";
+import {
+	AllowanceProvider,
+	AllowanceTransfer,
+	PERMIT2_ADDRESS,
+	PermitSingle,
+} from "@uniswap/permit2-sdk";
+import { ethers } from "ethers";
+import { getDefaultWeb3 } from "../dispatchers/Web3Dispatcher/web3dispatcher";
 
 export const fetchBalanceForToken = async (chainId: number, tokenAddress: string, walletAddress: string): Promise<BigNumber> => {
 
@@ -152,4 +166,48 @@ export const getRouterAddress = async (chainId: number) => {
 	}
 
 	return respParsed.address;
+}
+
+export const initFusionSwap = async (chainId: number, fromTokenAddress: string, toTokenAddress: string, amount: BigNumber, userAddress: string, receiver: string) => {
+
+	const fromTokenAddressParsed = fromTokenAddress === '0x0000000000000000000000000000000000000000' ? '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' : fromTokenAddress;
+	const toTokenAddressParsed = toTokenAddress === '0x0000000000000000000000000000000000000000' ? '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' : toTokenAddress;
+
+	const BASE_URL = process.env.REACT_APP_PROXY_API_BASE_URL;
+	if ( !BASE_URL ) {
+		console.log('No proxy base url in .env');
+		throw new Error('No proxy base url in .env');
+	}
+
+	const web3_4 = new Web3_4((window as any).ethereum);
+	const sdk = new FusionSDK({
+		url: combineURLs(BASE_URL, `/fusion`),
+		network: chainId,
+		blockchainProvider: (web3_4.eth as any),
+	});
+	(window as any).sdk = sdk;
+	console.log('sdk', (window as any).sdk);
+
+	const params = {
+		fromTokenAddress: fromTokenAddressParsed,
+		toTokenAddress: toTokenAddressParsed,
+		amount: amount.toFixed(0, BigNumber.ROUND_FLOOR),
+		walletAddress: userAddress,
+		receiver: receiver,
+		source: "envelop-ethglobal",
+	};
+
+	const quote = await sdk.getQuote(params);
+	console.log('quote', quote);
+
+	const preparedOrder = await sdk.createOrder(params);
+	console.log('preparedOrder', preparedOrder);
+
+	const info = await sdk.submitOrder(
+		preparedOrder.order,
+		preparedOrder.quoteId,
+	);
+	console.log('info', info, info.orderHash);
+
+	return info;
 }

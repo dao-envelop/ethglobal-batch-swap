@@ -30,6 +30,7 @@ import {
 	getApprovalDataForToken,
 	getRouterAddress,
 	getSwapDataForToken,
+	initFusionSwap,
 } from "../../utils/oneinch";
 import {
 	getSmartWalletBalances
@@ -40,6 +41,7 @@ import {
 	BigNumber,
 	chainTypeToERC20,
 	combineURLs,
+	createContract,
 	getNullERC20,
 	removeThousandSeparator,
 	tokenToFloat,
@@ -52,9 +54,11 @@ import {
 } from "../../utils/_types";
 import {
 	getChainId,
+	makeERC20Allowance,
 	transferERC20,
 	transferNativeTokens
 } from "../../dispatchers/Web3Dispatcher/web3dispatcher";
+import { error } from "console";
 
 type ContentTokenRowType = {
 	address: string,
@@ -107,6 +111,8 @@ export default function BatchSwap() {
 	const [ swapError,                       setSwapError                       ] = useState('');
 
 	const [ showError,                       setShowError                       ] = useState(false);
+
+	const [ swapMethod,                      setSwapMethod                      ] = useState('fusion');
 
 	useEffect(() => {
 
@@ -224,24 +230,28 @@ export default function BatchSwap() {
 								Select API to swap
 							</label>
 							<InputWithOptions
-								value={ 'Classic swap' }
+								value={ swapMethod }
 								placeholder="Select API to swap"
 								onSelect={(e) => {
+									if ( e.value === 'fusion_plus' ) { return; }
+									if ( e.value === 'fusion' ) {
+										if ( inputCheckoutTokenAddress === '0x0000000000000000000000000000000000000000' ) { setInputCheckoutTokenAddress(''); }
+									}
+									setSwapMethod(e.value);
 								}}
 								options={
 									[
 										{
 											label: 'Classic swap',
-											value: 'Classic swap',
+											value: 'classic',
 										},
 										{
 											label: 'Fusion',
-											value: 'Fusion',
-											badge: 'Under construction',
+											value: 'fusion',
 										},
 										{
 											label: 'Fusion+',
-											value: 'Fusion+',
+											value: 'fusion_plus',
 											badge: 'Under construction',
 										},
 									]
@@ -271,7 +281,7 @@ export default function BatchSwap() {
 									}}
 								/>
 								<CoinSelector
-									tokens        = { tokensToRender }
+									tokens        = { tokensToRender.filter((item) => { return swapMethod !== 'fusion' || item.contractAddress !== '0x0000000000000000000000000000000000000000' }) }
 									selectedToken = { inputCheckoutTokenAddress }
 									onChange      = {(address: string) => {
 										setInputCheckoutTokenAddress(address);
@@ -733,7 +743,7 @@ export default function BatchSwap() {
 		)
 	}
 
-	const createAdvancedLoaderCreate = (_currentChain: ChainType, _web3: Web3, _userAddress: string) => {
+	const createAdvancedLoaderCreateClassic = (_currentChain: ChainType, _web3: Web3, _userAddress: string) => {
 
 		const loaderStages: Array<AdvancedLoaderStageType> = []
 
@@ -1087,7 +1097,7 @@ export default function BatchSwap() {
 
 		return txResp;
 	}
-	const swapSubmit = async (_currentChain: ChainType, _web3: Web3, _userAddress: string) => {
+	const swapSubmitClassic = async (_currentChain: ChainType, _web3: Web3, _userAddress: string) => {
 
 		if ( swapRouterAddress === '' ) {
 			setModal({
@@ -1103,7 +1113,7 @@ export default function BatchSwap() {
 			return;
 		}
 
-		createAdvancedLoaderCreate(_currentChain, _web3, _userAddress);
+		createAdvancedLoaderCreateClassic(_currentChain, _web3, _userAddress);
 
 		let txBatch: Array<{ target: Array<string>, value: Array<string>, data: Array<string> }> = [];
 
@@ -1152,6 +1162,219 @@ export default function BatchSwap() {
 				},
 			],
 		});
+	}
+
+	const createAdvancedLoaderCreateFuison = (_currentChain: ChainType) => {
+
+		const loaderStages: Array<AdvancedLoaderStageType> = []
+
+		if ( inputCheckoutTokenAddress === '0x0000000000000000000000000000000000000000' ) {
+			loaderStages.push({
+				id: 'wrapsrceth',
+				sortOrder: 10,
+				text: `Wrapping ${_currentChain.symbol} to w${_currentChain.symbol}`,
+				status: _AdvancedLoadingStatus.queued
+			});
+		} else {
+			loaderStages.push({
+				id: 'approvesrc',
+				sortOrder: 20,
+				text: 'Approving source token',
+				status: _AdvancedLoadingStatus.queued
+			});
+		}
+
+
+		loaderStages.push({
+			id: 'createorders',
+			sortOrder: 30,
+			text: 'Creating orders',
+			total: contentTokens.length,
+			status: _AdvancedLoadingStatus.queued
+		});
+
+		const advLoader = {
+			title: 'Waiting to swap',
+			stages: loaderStages
+		};
+		createAdvancedLoader(advLoader);
+
+	}
+
+	const approveSrcFusion = async (_currentChain: ChainType, _web3: Web3, _userAddress: string) => {
+
+		if ( inputCheckoutTokenAddress === '0x0000000000000000000000000000000000000000' ) {
+			updateStepAdvancedLoader({
+				id: 'approvesrc',
+				status: _AdvancedLoadingStatus.complete,
+			});
+			return;
+		}
+
+		let foundCheckoutERC20 = erc20List.find((item) => { return item.contractAddress.toLowerCase() === inputCheckoutTokenAddress.toLowerCase() });
+		if ( !foundCheckoutERC20 ) {
+			foundCheckoutERC20 = getNullERC20(inputCheckoutTokenAddress);
+		}
+
+		updateStepAdvancedLoader({
+			id: 'approvesrc',
+			status: _AdvancedLoadingStatus.loading,
+			text: `Approving source token: ${foundCheckoutERC20.symbol}`,
+		});
+
+		const checkoutAmountParsed = tokenToInt(new BigNumber(inputCheckoutTokenAmount), foundCheckoutERC20.decimals);
+
+		let allowance;
+		try {
+			allowance = await fetchAllowanceForToken(_currentChain.chainId, inputCheckoutTokenAddress, _userAddress);
+			console.log('allowance', allowance);
+		} catch(e: any) {
+			setModal({
+				type: _ModalTypes.error,
+				title: `Cannot check allowance ${foundCheckoutERC20.symbol}`,
+				details: [
+					`Stage: preparetx_approve`,
+					`Token ${foundCheckoutERC20.symbol}: ${foundCheckoutERC20.contractAddress}`,
+					`User address: ${_userAddress}`,
+					`Wallet address: ${walletToUse}`,
+					`Error: ${e}`
+				]
+			});
+			throw new Error();
+		}
+
+		if ( allowance && allowance.lt(checkoutAmountParsed) ) {
+			try {
+				await makeERC20Allowance(_web3, inputCheckoutTokenAddress, _userAddress, checkoutAmountParsed, swapRouterAddress)
+			} catch(e: any) {
+				setModal({
+					type: _ModalTypes.error,
+					title: `Cannot approve ${foundCheckoutERC20.symbol}`,
+					details: [
+						`Stage: transferCheckoutTokensToMaster`,
+						`Token ${foundCheckoutERC20.symbol}: ${inputCheckoutTokenAddress}`,
+						`User address: ${_userAddress}`,
+						`Wallet address: ${walletToUse}`,
+						`Amount to approve: ${tokenToFloat(checkoutAmountParsed, foundCheckoutERC20.decimals).toString()} (${checkoutAmountParsed})`,
+						'',
+						e.message || e,
+					]
+				});
+				throw new Error();
+			}
+		}
+
+		updateStepAdvancedLoader({
+			id: 'approvesrc',
+			status: _AdvancedLoadingStatus.complete,
+		});
+
+	}
+	const createOrdersFusion = async (_currentChain: ChainType, _web3: Web3, _userAddress: string) => {
+
+		let foundCheckoutERC20 = erc20List.find((item) => { return item.contractAddress.toLowerCase() === inputCheckoutTokenAddress.toLowerCase() });
+		if ( !foundCheckoutERC20 ) {
+			foundCheckoutERC20 = getNullERC20(inputCheckoutTokenAddress);
+		}
+
+		const checkoutAmountParsed = tokenToInt(new BigNumber(inputCheckoutTokenAmount), foundCheckoutERC20.decimals);
+
+		const ordersSuccess = [];
+		const ordersError = [];
+
+		for (let idx = 0; idx < contentTokens.length; idx++) {
+			const item = contentTokens[idx];
+
+			let foundERC20 = [
+				chainTypeToERC20(_currentChain),
+				...erc20List
+			].find((iitem) => { return iitem.contractAddress.toLowerCase() === item.address.toLowerCase() });
+			if ( !foundERC20 ) {
+				foundERC20 = getNullERC20(item.address);
+			}
+
+			updateStepAdvancedLoader({
+				id: 'createorders',
+				status: _AdvancedLoadingStatus.loading,
+				text: `Creating orders: ${foundCheckoutERC20.symbol}`,
+				current: idx + 1,
+			});
+
+			const percentParsed = new BigNumber(item.percent).dividedBy(100);
+			const amountToCheck = checkoutAmountParsed.multipliedBy(percentParsed);
+			console.log('amountToCheck', amountToCheck);
+
+			try {
+				const order = await initFusionSwap(_currentChain.chainId, inputCheckoutTokenAddress, item.address, amountToCheck, _userAddress, walletToUse);
+				if ( order ) {
+					ordersSuccess.push(order);
+				} else {
+					ordersError.push(item.address);
+				}
+			} catch(e: any) {
+				console.log(`Cannot create order for ${foundERC20.symbol}`, e);
+				ordersError.push(`${foundERC20.symbol} (${foundERC20.contractAddress})`);
+			}
+		}
+
+		updateStepAdvancedLoader({
+			id: 'createorders',
+			status: _AdvancedLoadingStatus.complete,
+			text: `Creating orders`,
+			current: contentTokens.length,
+		});
+
+		return {
+			ordersSuccess,
+			ordersError
+		}
+
+	}
+	const swapSubmitFusion = async (_currentChain: ChainType, _web3: Web3, _userAddress: string) => {
+
+		if ( swapRouterAddress === '' ) {
+			setModal({
+				type: _ModalTypes.error,
+				title: `Cannot fetch router address`,
+				details: [
+					`Stage: preparetx_swap`,
+					`User address: ${_userAddress}`,
+					`Wallet address: ${walletToUse}`,
+					`Content tokens: ${JSON.stringify(contentTokens)}`,
+				]
+			});
+			return;
+		}
+
+		createAdvancedLoaderCreateFuison(_currentChain);
+
+		try { await approveSrcFusion(_currentChain, _web3, _userAddress); } catch(ignored) { return; }
+
+		const { ordersSuccess, ordersError } = await createOrdersFusion(_currentChain, _web3, _userAddress);
+
+		console.log('ordersSuccess', ordersSuccess);
+		console.log('ordersError', ordersError);
+
+		updateAllBalances(_userAddress);
+		updateAllBalances(walletToUse);
+
+		unsetModal();
+
+		setModal({
+			type: _ModalTypes.success,
+			title: `Transactions have been executed`,
+			buttons: [{
+				text: 'Ok',
+				clickFunc: () => {
+					unsetModal();
+				}
+			}],
+			copyables: [
+				...ordersSuccess.map((item) => { return { title: 'Success', content: item.orderHash } }),
+				...ordersError.map((item) => { return { title: 'Error', content: item } }),
+			]
+		});
+
 	}
 	const getSubmitBtn = () => {
 
@@ -1242,7 +1465,20 @@ export default function BatchSwap() {
 					}
 
 					if ( !_web3 || !_userAddress || !_currentChain ) { return; }
-					swapSubmit(_currentChain, _web3, _userAddress);
+					if ( swapMethod === 'classic' ) {
+						swapSubmitClassic(_currentChain, _web3, _userAddress);
+					}
+					if ( swapMethod === 'fusion' ) {
+						if ( inputCheckoutTokenAddress === '0x0000000000000000000000000000000000000000' ) {
+							setModal({
+								type: _ModalTypes.error,
+								title: `Cannot swap native token`,
+								text: [{ text: 'Under construction' }]
+							});
+							return;
+						}
+						swapSubmitFusion(_currentChain, _web3, _userAddress);
+					}
 				}}
 			>Swap</button>
 		)
