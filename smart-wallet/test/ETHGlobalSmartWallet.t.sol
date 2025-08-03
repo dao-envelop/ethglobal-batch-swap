@@ -3,15 +3,19 @@ pragma solidity ^0.8.30;
 
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-import {Test, console} from "forge-std/Test.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {Test, console2} from "forge-std/Test.sol";
 import "forge-std/console.sol";
-import {ETHGlobalSmartWallet} from "../src/ETHGlobalSmartWallet.sol";
+import "../src/ETHGlobalSmartWallet.sol";
 import {WalletFactory} from "../src/WalletFactory.sol";
 import {Wallet} from "../src/Wallet.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
 import {MockERC721} from "../src/mocks/MockERC721.sol";
 
 contract ETHGlobalSmartWalletTest is Test {
+    bytes4 public constant MAGIC_VALUE = 0x1626ba7e;
+    address public constant EOA = 0x7EC0BF0a4D535Ea220c6bD961e352B752906D568;
+    uint256 public constant EOA_PRIVKEY = 0x1bbde125e133d7b485f332b8125b891ea2fbb6a957e758db72e6539d46e2cd71;
     ETHGlobalSmartWallet public impl;
     WalletFactory public factory;
     ETHGlobalSmartWallet public wallet;
@@ -41,7 +45,7 @@ contract ETHGlobalSmartWalletTest is Test {
         wallet = ETHGlobalSmartWallet(walletAddress);
     }
 
-    function test_init() public {
+    function test_init() public view {
         assertEq(wallet.ownerOf(wallet.TOKEN_ID()), address(this));
         assertEq(wallet.TOKEN_ID(), 1);
         assertEq(wallet.name(), "ETHGlobal Smart Wallet");
@@ -171,7 +175,7 @@ contract ETHGlobalSmartWalletTest is Test {
         address[] memory targets = new address[](2);
         bytes[] memory dataArray = new bytes[](2);
         uint256[] memory values = new uint256[](1);
-        address receiver = address(2);
+        //address receiver = address(2);
         targets[0] = address(erc20_1);
         targets[1] = address(erc20_2);
         values[0] = 0;
@@ -186,5 +190,20 @@ contract ETHGlobalSmartWalletTest is Test {
         valuesNew[1] = 0;
         vm.expectRevert(abi.encodeWithSelector(Wallet.DifferentArraysLength.selector, 2, 1));
         wallet.executeEncodedTxBatch(targets, valuesNew, dataArrayNew);
+    }
+
+    function test_checkSignature() public {
+        bytes32 digest = MessageHashUtils.toEthSignedMessageHash(
+            keccak256(abi.encode(address(this), 0xfffffffffff)) // just any message
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(EOA_PRIVKEY, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+        bytes4 result = wallet.isValidSignature(digest, signature);
+        console2.log(wallet.ownerOf(wallet.TOKEN_ID()));
+        assertEq(result, bytes4(0xffffffff));
+        wallet.transferFrom(address(this), EOA, wallet.TOKEN_ID());
+        result = wallet.isValidSignature(digest, signature);
+        console2.log(wallet.ownerOf(wallet.TOKEN_ID()));
+        assertEq(result, MAGIC_VALUE);
     }
 }
