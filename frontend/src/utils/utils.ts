@@ -8,7 +8,7 @@ import {
 import default_icon from '../static/pics/coins/_default.svg';
 
 import BigNumber from 'bignumber.js';
-import Web3, { Contract } from 'web3';
+import Web3 from 'web3';
 BigNumber.config({ DECIMAL_PLACES: 50, EXPONENTIAL_AT: 100});
 export { BigNumber }
 
@@ -165,7 +165,7 @@ export const getABI = async (chainId: number, contractAddress: string, typeName:
 
 	throw new Error(`Cannot load ${chainId}/${contractAddress} abi`);
 }
-export const createContract = async (web3: Web3, contractType: string, contractAddress: string): Promise<Contract<any>> => {
+export const createContract = async (web3: Web3, contractType: string, contractAddress: string): Promise<any> => {
 	const chainId = Number(await web3.eth.getChainId());
 	const abi = await getABI(chainId, contractAddress || '', contractType);
 	const contract = new web3.eth.Contract(abi as any, contractAddress);
