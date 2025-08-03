@@ -99,7 +99,6 @@ export default function TokenAmounts(props: TokenAmountsProps) {
 					`Token: ${item.contractAddress}`,
 					`User address: ${userAddress}`,
 					`Wallet address: ${walletAddress}`,
-					`Smart wallet balances: ${JSON.stringify(ERC20Balances.filter((item) => { return item.walletAddress.toLowerCase() === walletAddress.toLowerCase() }))}`,
 					'',
 					e.message || e,
 				]
@@ -114,13 +113,12 @@ export default function TokenAmounts(props: TokenAmountsProps) {
 		} catch(e: any) {
 			setModal({
 				type: _ModalTypes.error,
-				title: `Cannot create wallet`,
+				title: `Cannot transfer token`,
 				details: [
 					`Stage: execute_tx`,
 					`Token: ${item.contractAddress}`,
 					`User address: ${userAddress}`,
 					`Wallet address: ${walletAddress}`,
-					`Smart wallet balances: ${JSON.stringify(ERC20Balances.filter((item) => { return item.walletAddress.toLowerCase() === walletAddress.toLowerCase() }))}`,
 					'',
 					e.message || e,
 				]
@@ -228,7 +226,6 @@ export default function TokenAmounts(props: TokenAmountsProps) {
 					`Token: ${item.contractAddress}`,
 					`User address: ${userAddress}`,
 					`Wallet address: ${walletAddress}`,
-					`Smart wallet balances: ${JSON.stringify(ERC20Balances.filter((item) => { return item.walletAddress.toLowerCase() === walletAddress.toLowerCase() }))}`,
 					'',
 					e.message || e,
 				]
@@ -243,13 +240,12 @@ export default function TokenAmounts(props: TokenAmountsProps) {
 		} catch(e: any) {
 			setModal({
 				type: _ModalTypes.error,
-				title: `Cannot create wallet`,
+				title: `Cannot transfer token`,
 				details: [
 					`Stage: execute_tx`,
 					`Token: ${item.contractAddress}`,
 					`User address: ${userAddress}`,
 					`Wallet address: ${walletAddress}`,
-					`Smart wallet balances: ${JSON.stringify(ERC20Balances.filter((item) => { return item.walletAddress.toLowerCase() === walletAddress.toLowerCase() }))}`,
 					'',
 					e.message || e,
 				]
@@ -389,19 +385,19 @@ export default function TokenAmounts(props: TokenAmountsProps) {
 		let txResp;
 		let txs: any = [];
 		try {
-			ERC20Balances
-			.filter((item) => { return item.walletAddress.toLowerCase() === walletAddress.toLowerCase() })
-			.filter((item) => { return !item.balance.balance.eq(0) })
+			tokens
+			.filter((item) => { return item.amount && !item.amount.eq(0) })
 			.filter((item) => {
-				const foundERC20 = erc20List.find((iitem) => { return item.balance.contractAddress.toLowerCase() === iitem.contractAddress.toLowerCase() });
+				const foundERC20 = erc20List.find((iitem) => { return item.contractAddress.toLowerCase() === iitem.contractAddress.toLowerCase() });
 				if ( foundERC20 && foundERC20.decimals === 0 ) { return false; }
 				return true;
 			})
 			.forEach(async (item) => {
-				if ( item.balance.contractAddress === '0x0000000000000000000000000000000000000000' ) {
-					txs.push(await prepareTxTransferNativeToken(currentChain.chainId, userAddress, item.balance.balance))
+				if ( !item.amount ) { return; }
+				if ( item.contractAddress === '0x0000000000000000000000000000000000000000' ) {
+					txs.push(await prepareTxTransferNativeToken(currentChain.chainId, userAddress, item.amount))
 				} else {
-					txs.push(await prepareTxTransferERC20Token(currentChain.chainId, item.balance.contractAddress, userAddress, item.balance.balance))
+					txs.push(await prepareTxTransferERC20Token(currentChain.chainId, item.contractAddress, userAddress, item.amount))
 				}
 			})
 		} catch (e: any) {
@@ -412,7 +408,6 @@ export default function TokenAmounts(props: TokenAmountsProps) {
 					`Stage: prepare_tx`,
 					`User address: ${userAddress}`,
 					`Wallet address: ${walletAddress}`,
-					`Smart wallet balances: ${JSON.stringify(ERC20Balances.filter((item) => { return item.walletAddress.toLowerCase() === walletAddress.toLowerCase() }))}`,
 					'',
 					e.message || e,
 				]
@@ -432,7 +427,6 @@ export default function TokenAmounts(props: TokenAmountsProps) {
 					`Stage: execute_tx`,
 					`User address: ${userAddress}`,
 					`Wallet address: ${walletAddress}`,
-					`Smart wallet balances: ${JSON.stringify(ERC20Balances.filter((item) => { return item.walletAddress.toLowerCase() === walletAddress.toLowerCase() }))}`,
 					'',
 					e.message || e,
 				]
