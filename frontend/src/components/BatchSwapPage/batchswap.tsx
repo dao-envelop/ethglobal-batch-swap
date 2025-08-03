@@ -640,7 +640,7 @@ export default function BatchSwap() {
 			return foundERC20;
 		});
 
-		return output;
+		return output.filter((item) => { return swapMethod !== 'fusion' || item.contractAddress !== '0x0000000000000000000000000000000000000000' });
 	}
 	const getContentTokensBlock = () => {
 
@@ -1469,7 +1469,8 @@ export default function BatchSwap() {
 						swapSubmitClassic(_currentChain, _web3, _userAddress);
 					}
 					if ( swapMethod === 'fusion' ) {
-						if ( inputCheckoutTokenAddress === '0x0000000000000000000000000000000000000000' ) {
+						const foundETH = contentTokens.find((item) => { return item.address === '0x0000000000000000000000000000000000000000' });
+						if ( foundETH || inputCheckoutTokenAddress === '0x0000000000000000000000000000000000000000' ) {
 							setModal({
 								type: _ModalTypes.error,
 								title: `Cannot swap native token`,
