@@ -28,6 +28,7 @@ import {
 	fetchAllowanceForToken,
 	fetchBalanceForToken,
 	getApprovalDataForToken,
+	getFusionSwapStatus,
 	getRouterAddress,
 	getSwapDataForToken,
 	initFusionSwap,
@@ -41,11 +42,12 @@ import {
 	BigNumber,
 	chainTypeToERC20,
 	combineURLs,
-	createContract,
+	compactString,
 	getNullERC20,
 	removeThousandSeparator,
 	tokenToFloat,
-	tokenToInt
+	tokenToInt,
+	waitUntilAsync
 } from "../../utils/utils";
 
 import {
@@ -59,7 +61,11 @@ import {
 	transferNativeTokens
 } from "../../dispatchers/Web3Dispatcher/web3dispatcher";
 
-import { Web3 as Web3_4 } from 'web3-4';
+import {
+	OrderInfo,
+	OrderStatus,
+	OrderStatusResponse
+} from "@1inch/fusion-sdk";
 
 type ContentTokenRowType = {
 	address: string,
@@ -1189,13 +1195,14 @@ export default function BatchSwap() {
 			status: _AdvancedLoadingStatus.queued
 		});
 
-		loaderStages.push({
-			id: 'createorders',
-			sortOrder: 30,
-			text: 'Creating orders',
-			total: contentTokens.length,
-			status: _AdvancedLoadingStatus.queued
-		});
+		contentTokens.forEach((item, idx) => {
+			loaderStages.push({
+				id: `createorder_${item.address}`,
+				sortOrder: 30+idx,
+				text: `Creating order for ${compactString(item.address)}`,
+				status: _AdvancedLoadingStatus.queued
+			});
+		})
 
 		const advLoader = {
 			title: 'Waiting to swap',
@@ -1348,49 +1355,65 @@ export default function BatchSwap() {
 
 		const checkoutAmountParsed = tokenToInt(new BigNumber(inputCheckoutTokenAmount), foundCheckoutERC20.decimals);
 
-		const ordersSuccess = [];
-		const ordersError = [];
+		const ordersSuccess: Array<OrderStatusResponse> = [];
+		const ordersError: Array<string> = [];
 
-		for (let idx = 0; idx < contentTokens.length; idx++) {
-			const item = contentTokens[idx];
-
-			let foundERC20 = [
-				chainTypeToERC20(_currentChain),
-				...erc20List
-			].find((iitem) => { return iitem.contractAddress.toLowerCase() === item.address.toLowerCase() });
-			if ( !foundERC20 ) {
-				foundERC20 = getNullERC20(item.address);
-			}
-
-			updateStepAdvancedLoader({
-				id: 'createorders',
-				status: _AdvancedLoadingStatus.loading,
-				text: `Creating orders: ${foundCheckoutERC20.symbol}`,
-				current: idx + 1,
-			});
-
-			const percentParsed = new BigNumber(item.percent).dividedBy(100);
-			const amountToCheck = checkoutAmountParsed.multipliedBy(percentParsed);
-
-			try {
-				const order = await initFusionSwap(_currentChain.chainId, tokenToSwap, item.address, amountToCheck, _userAddress, walletToUse);
-				if ( order ) {
-					ordersSuccess.push(order);
-				} else {
-					ordersError.push(item.address);
+		await Promise.all(
+			contentTokens.map(async (item) => {
+				let foundERC20 = [
+					chainTypeToERC20(_currentChain),
+					...erc20List
+				].find((iitem) => { return iitem.contractAddress.toLowerCase() === item.address.toLowerCase() });
+				if ( !foundERC20 ) {
+					foundERC20 = getNullERC20(item.address);
 				}
-			} catch(e: any) {
-				console.log(`Cannot create order for ${foundERC20.symbol}`, e);
-				ordersError.push(`${foundERC20.symbol} (${foundERC20.contractAddress})`);
-			}
-		}
 
-		updateStepAdvancedLoader({
-			id: 'createorders',
-			status: _AdvancedLoadingStatus.complete,
-			text: `Creating orders`,
-			current: contentTokens.length,
-		});
+				updateStepAdvancedLoader({
+					id: `createorder_${item.address}`,
+					text: `Creating order for ${foundERC20.symbol}`,
+					status: _AdvancedLoadingStatus.loading
+				});
+
+				const percentParsed = new BigNumber(item.percent).dividedBy(100);
+				const amountToCheck = checkoutAmountParsed.multipliedBy(percentParsed);
+				let order: OrderInfo;
+				try {
+					order = await initFusionSwap(_currentChain.chainId, tokenToSwap, item.address, amountToCheck, _userAddress, walletToUse);
+
+					let st: OrderStatusResponse | undefined;
+					await waitUntilAsync(async () => {
+						st = await getFusionSwapStatus(_currentChain.chainId, order.orderHash);
+						return st.status !== OrderStatus.Pending
+					}, 5*1000, 5);
+
+					console.log('st', st);
+					if ( st && st.status === OrderStatus.Filled ) {
+						ordersSuccess.push(st);
+						updateStepAdvancedLoader({
+							id: `createorder_${item.address}`,
+							text: `SUCCESS: Creating order for ${foundERC20.symbol}`,
+							status: _AdvancedLoadingStatus.complete
+						});
+					} else {
+						ordersError.push(item.address);
+						updateStepAdvancedLoader({
+							id: `createorder_${item.address}`,
+							text: `ERROR: Creating order for ${foundERC20.symbol}`,
+							status: _AdvancedLoadingStatus.complete
+						});
+					}
+				} catch(e: any) {
+					console.log(`Cannot create order for ${foundERC20.symbol}`, e);
+					ordersError.push(`${foundERC20.symbol} (${foundERC20.contractAddress})`);
+
+					updateStepAdvancedLoader({
+						id: `createorder_${item.address}`,
+						text: `ERROR: Creating order for ${foundERC20.symbol}`,
+						status: _AdvancedLoadingStatus.complete
+					});
+				}
+			})
+		)
 
 		return {
 			ordersSuccess,
@@ -1441,9 +1464,10 @@ export default function BatchSwap() {
 				}
 			}],
 			copyables: [
-				...ordersSuccess.map((item) => { return { title: 'Success', content: item.orderHash } }),
 				...ordersError.map((item) => { return { title: 'Error', content: item } }),
-			]
+			],
+			links: [{ text: `View fill tx on ${_currentChain.explorerName}`, url: combineURLs(_currentChain.explorerBaseUrl, `/tx/${ordersSuccess[0].fills[0].txHash}`) }]
+
 		});
 
 	}

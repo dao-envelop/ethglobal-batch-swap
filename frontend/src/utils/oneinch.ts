@@ -185,8 +185,6 @@ export const initFusionSwap = async (chainId: number, fromTokenAddress: string, 
 		network: chainId,
 		blockchainProvider: (web3_4.eth as any),
 	});
-	(window as any).sdk = sdk;
-	console.log('sdk', (window as any).sdk);
 
 	const params = {
 		fromTokenAddress: fromTokenAddressParsed,
@@ -209,5 +207,23 @@ export const initFusionSwap = async (chainId: number, fromTokenAddress: string, 
 	);
 	console.log('info', info, info.orderHash);
 
+	return info;
+}
+export const getFusionSwapStatus = async (chainId: number, orderHash: string) => {
+
+	const BASE_URL = process.env.REACT_APP_PROXY_API_BASE_URL;
+	if ( !BASE_URL ) {
+		console.log('No proxy base url in .env');
+		throw new Error('No proxy base url in .env');
+	}
+
+	const web3_4 = new Web3_4((window as any).ethereum);
+	const sdk = new FusionSDK({
+		url: combineURLs(BASE_URL, `/fusion`),
+		network: chainId,
+		blockchainProvider: (web3_4.eth as any),
+	});
+
+	const info = await sdk.getOrderStatus(orderHash);
 	return info;
 }
