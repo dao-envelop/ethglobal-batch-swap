@@ -102,7 +102,7 @@ export const getApprovalDataForToken = async (chainId: number, tokenAddress: str
 	return respParsed;
 }
 
-export const getSwapDataForToken = async (chainId: number, fromTokenAddress: string, toTokenAddress: string, amount: BigNumber, walletAddress: string, toWalletAddress?: string) => {
+export const getSwapDataForToken = async (chainId: number, fromTokenAddress: string, toTokenAddress: string, amount: BigNumber, walletAddress: string, toWalletAddress?: string, disableEstimate?: boolean) => {
 
 	const BASE_URL = process.env.REACT_APP_PROXY_API_BASE_URL;
 	if ( !BASE_URL ) {
@@ -113,7 +113,7 @@ export const getSwapDataForToken = async (chainId: number, fromTokenAddress: str
 	const receiver = toWalletAddress || walletAddress;
 	const fromTokenAddressToUse = fromTokenAddress === '0x0000000000000000000000000000000000000000' ? '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' : fromTokenAddress;
 	const toTokenAddressToUse = toTokenAddress === '0x0000000000000000000000000000000000000000' ? '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' : toTokenAddress;
-	const url = combineURLs(BASE_URL, `/swapproxy/${chainId}/swap?src=${fromTokenAddressToUse}&dst=${toTokenAddressToUse}&amount=${amount}&from=${walletAddress}&origin=${walletAddress}&receiver=${receiver}&slippage=${1}&disableEstimate=${true}`);
+	const url = combineURLs(BASE_URL, `/swapproxy/${chainId}/swap?src=${fromTokenAddressToUse}&dst=${toTokenAddressToUse}&amount=${amount}&from=${walletAddress}&origin=${walletAddress}&receiver=${receiver}&slippage=${1}&disableEstimate=${disableEstimate}`);
 
 	let resp: any;
 	let respParsed: any;
