@@ -1020,7 +1020,7 @@ export default function BatchSwap() {
 			const amountToCheck = checkoutAmountParsed.multipliedBy(percentParsed);
 
 			try {
-				const tx = await getSwapDataForToken(_currentChain.chainId, inputCheckoutTokenAddress, item.address, amountToCheck, walletToUse);
+				const tx = await getSwapDataForToken(_currentChain.chainId, inputCheckoutTokenAddress, item.address, amountToCheck, walletToUse, walletToUse, true);
 				if ( tx ) {
 					txs.push({
 						target: [ swapRouterAddress ],
