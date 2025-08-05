@@ -1370,8 +1370,12 @@ export default function BatchSwap() {
 
 		const checkoutAmountParsed = tokenToInt(new BigNumber(inputCheckoutTokenAmount), foundCheckoutERC20.decimals);
 
-		const ordersSuccess: Array<OrderStatusResponse> = [];
-		const ordersError: Array<string> = [];
+		const ordersResult: Array<{
+			token: ERC20Type,
+			status: string,
+			errorMsg?: string,
+			orderStatus?: OrderStatusResponse
+		}> = [];
 
 		await Promise.all(
 			contentTokens.map(async (item) => {
@@ -1402,15 +1406,37 @@ export default function BatchSwap() {
 					}, 5*1000, 5);
 
 					console.log('st', st);
-					if ( st && st.status === OrderStatus.Filled ) {
-						ordersSuccess.push(st);
-						updateStepAdvancedLoader({
-							id: `createorder_${item.address}`,
-							text: `SUCCESS: Creating order for ${foundERC20.symbol}`,
-							status: _AdvancedLoadingStatus.complete
-						});
+					if ( st ) {
+						if ( st.status === OrderStatus.Filled ) {
+							ordersResult.push({
+								token: foundERC20,
+								status: 'success',
+								orderStatus: st
+							});
+							updateStepAdvancedLoader({
+								id: `createorder_${item.address}`,
+								text: `SUCCESS: Creating order for ${foundERC20.symbol}`,
+								status: _AdvancedLoadingStatus.complete
+							});
+						} else {
+							ordersResult.push({
+								token: foundERC20,
+								status: 'error',
+								errorMsg: `Order status is ${st.status}`,
+								orderStatus: st
+							});
+							updateStepAdvancedLoader({
+								id: `createorder_${item.address}`,
+								text: `ERROR: Creating order for ${foundERC20.symbol}`,
+								status: _AdvancedLoadingStatus.complete
+							});
+						}
 					} else {
-						ordersError.push(item.address);
+						ordersResult.push({
+							token: foundERC20,
+							status: 'error',
+							errorMsg: `Cannot get order status`,
+						});
 						updateStepAdvancedLoader({
 							id: `createorder_${item.address}`,
 							text: `ERROR: Creating order for ${foundERC20.symbol}`,
@@ -1419,8 +1445,11 @@ export default function BatchSwap() {
 					}
 				} catch(e: any) {
 					console.log(`Cannot create order for ${foundERC20.symbol}`, e);
-					ordersError.push(`${foundERC20.symbol} (${foundERC20.contractAddress})`);
-
+					ordersResult.push({
+						token: foundERC20,
+						status: 'error',
+						errorMsg: `Cannot create order status: ${e?.response?.data?.description || e}`,
+					});
 					updateStepAdvancedLoader({
 						id: `createorder_${item.address}`,
 						text: `ERROR: Creating order for ${foundERC20.symbol}`,
@@ -1430,10 +1459,7 @@ export default function BatchSwap() {
 			})
 		)
 
-		return {
-			ordersSuccess,
-			ordersError
-		}
+		return ordersResult
 
 	}
 	const swapSubmitFusion = async (_currentChain: ChainType, _web3: Web3, _userAddress: string) => {
@@ -1459,29 +1485,58 @@ export default function BatchSwap() {
 		}
 		try { await approveSrcFusion(_currentChain, _web3, _userAddress); } catch(ignored) { return; }
 
-		const { ordersSuccess, ordersError } = await createOrdersFusion(_currentChain, _web3, _userAddress);
-
-		console.log('ordersSuccess', ordersSuccess);
-		console.log('ordersError', ordersError);
+		const ordersResult = await createOrdersFusion(_currentChain, _web3, _userAddress);
+		console.log('ordersResult', ordersResult);
+		let orderFills: Array<string> = [];
+		ordersResult.forEach((item) => {
+			if ( item.status === 'success' && item.orderStatus ) {
+				item.orderStatus.fills.forEach((iitem) => {
+					orderFills = [
+						...orderFills.filter((iiitem) => {
+							return iiitem.toLowerCase() !== iitem.txHash.toLowerCase();
+						}),
+						iitem.txHash
+					]
+				})
+			}
+		});
+		console.log('orderFills', orderFills);
 
 		updateAllBalances(_userAddress);
 		updateAllBalances(walletToUse);
 
 		unsetModal();
 
+		const errorsFound = ordersResult.find((item) => { return item.status === 'error' });
+
 		setModal({
 			type: _ModalTypes.success,
 			title: `Transactions have been executed`,
+			text: errorsFound ? [
+				{ text: 'There are orders with error. Try to use classic swap' },
+				...ordersResult
+					.map((item) => {
+						if ( item.status !== 'error' || !item.errorMsg ) { return undefined }
+						return { text: `${item.token.symbol} (${compactString(item.token.contractAddress)}): ${item.errorMsg}` }
+					})
+					.filter((item) => { return !!item })
+			] : undefined,
 			buttons: [{
 				text: 'Ok',
 				clickFunc: () => {
 					unsetModal();
 				}
 			}],
-			copyables: [
-				...ordersError.map((item) => { return { title: 'Error', content: item } }),
-			],
-			links: [{ text: `View fill tx on ${_currentChain.explorerName}`, url: combineURLs(_currentChain.explorerBaseUrl, `/tx/${ordersSuccess[0].fills[0].txHash}`) }]
+			links: orderFills.map((item) => { return { text: `View fill tx on ${_currentChain.explorerName}`, url: combineURLs(_currentChain.explorerBaseUrl, `/tx/${item}`) } }),
+			// details: [
+			// 	'Orders with errors:',
+			// 	...ordersResult
+			// 		.map((item) => {
+			// 			if ( item.status !== 'error' || !item.errorMsg ) { return undefined }
+			// 			return `${item.token.symbol} (${compactString(item.token.contractAddress)}): ${item.errorMsg}`
+			// 		})
+			// 		.filter((item) => { return !!item })
+			// ]
 
 		});
 

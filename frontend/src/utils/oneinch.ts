@@ -8,15 +8,6 @@ import {
 } from "./utils";
 
 import Web3_4 from "web3-4";
-import { ERC20Type } from "./_types";
-import {
-	AllowanceProvider,
-	AllowanceTransfer,
-	PERMIT2_ADDRESS,
-	PermitSingle,
-} from "@uniswap/permit2-sdk";
-import { ethers } from "ethers";
-import { getDefaultWeb3 } from "../dispatchers/Web3Dispatcher/web3dispatcher";
 
 export const fetchBalanceForToken = async (chainId: number, tokenAddress: string, walletAddress: string): Promise<BigNumber> => {
 
