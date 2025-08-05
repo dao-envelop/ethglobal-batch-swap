@@ -285,9 +285,13 @@ export default function BatchSwap() {
 										setInputCheckoutTokenAddress(value);
 										setSwapError('');
 										if ( Web3.utils.isAddress(value) ) {
-											const foundToken = erc20List.find((item) => { return item.contractAddress.toLowerCase() === value.toLowerCase() });
-											if ( !foundToken ) { requestERC20Token(value, userAddress); return; }
-											if ( foundToken.balance.eq(0) ) { updateERC20Balance(value, userAddress || ''); }
+											let addressToUpdate = value;
+											if ( value === '0x0000000000000000000000000000000000000000' ) {
+												addressToUpdate = fusionWrapNativeToken;
+											}
+											const foundToken = erc20List.find((item) => { return item.contractAddress.toLowerCase() === addressToUpdate.toLowerCase() });
+											if ( !foundToken ) { requestERC20Token(addressToUpdate, userAddress); return; }
+											if ( foundToken.balance.eq(0) ) { updateERC20Balance(addressToUpdate, userAddress || ''); }
 										}
 									}}
 								/>
@@ -297,6 +301,9 @@ export default function BatchSwap() {
 									onChange      = {(address: string) => {
 										setInputCheckoutTokenAddress(address);
 										setSwapError('');
+										if ( address === '0x0000000000000000000000000000000000000000' ) {
+											requestERC20Token(fusionWrapNativeToken);
+										}
 									}}
 								/>
 							</div>
@@ -680,8 +687,12 @@ export default function BatchSwap() {
 										const value = e.target.value.toLowerCase().replace(/[^a-f0-9x]/g, "");
 										setInputContentTokenAddress(value);
 										if ( Web3.utils.isAddress(value) ) {
-											const foundToken = erc20List.find((item) => { return item.contractAddress.toLowerCase() === value.toLowerCase() });
-											if ( !foundToken || foundToken.balance.eq(0) ) { requestERC20Token(value, userAddress); }
+											let addressToUpdate = value;
+											if ( value === '0x0000000000000000000000000000000000000000' ) {
+												addressToUpdate = fusionWrapNativeToken;
+											}
+											const foundToken = erc20List.find((item) => { return item.contractAddress.toLowerCase() ===  addressToUpdate.toLowerCase() });
+											if ( !foundToken || foundToken.balance.eq(0) ) { requestERC20Token( addressToUpdate, userAddress); }
 										}
 									}}
 								/>
@@ -691,8 +702,12 @@ export default function BatchSwap() {
 									onChange      = {(address: string) => {
 										setInputContentTokenAddress(address);
 										if ( Web3.utils.isAddress(address) ) {
-											const foundToken = erc20List.find((item) => { return item.contractAddress.toLowerCase() === address.toLowerCase() });
-											if ( !foundToken || foundToken.balance.eq(0) ) { requestERC20Token(address, userAddress); }
+											let addressToUpdate = address;
+											if ( address === '0x0000000000000000000000000000000000000000' ) {
+												addressToUpdate = fusionWrapNativeToken;
+											}
+											const foundToken = erc20List.find((item) => { return item.contractAddress.toLowerCase() === addressToUpdate.toLowerCase() });
+											if ( !foundToken || foundToken.balance.eq(0) ) { requestERC20Token(addressToUpdate, userAddress); }
 										}
 									}}
 								/>
@@ -1232,39 +1247,39 @@ export default function BatchSwap() {
 
 		const checkoutAmountParsed = tokenToInt(new BigNumber(inputCheckoutTokenAmount), _currentChain.decimals);
 
-		const userBalance = await fetchBalanceForToken(_currentChain.chainId, fusionWrapNativeToken, _userAddress);
-		if ( userBalance.lt(checkoutAmountParsed) ) {
+		// const userBalance = await fetchBalanceForToken(_currentChain.chainId, fusionWrapNativeToken, _userAddress);
+		// if ( userBalance.lt(checkoutAmountParsed) ) {
+		// }
 
-			let wrapTx;
-			try {
-				wrapTx = await getSwapDataForToken(_currentChain.chainId, '0x0000000000000000000000000000000000000000', fusionWrapNativeToken, checkoutAmountParsed, _userAddress, _userAddress, false);
-				console.log('wrapTx', wrapTx);
-			} catch(e: any) {
-				setModal({
-					type: _ModalTypes.error,
-					title: `Cannot get call data for native token wrap`,
-					details: [
-						`Stage: wrapsrceth`,
-						`Error: ${e}`
-					]
-				});
-				throw new Error();
-			}
+		let wrapTx;
+		try {
+			wrapTx = await getSwapDataForToken(_currentChain.chainId, '0x0000000000000000000000000000000000000000', fusionWrapNativeToken, checkoutAmountParsed, _userAddress, _userAddress, false);
+			console.log('wrapTx', wrapTx);
+		} catch(e: any) {
+			setModal({
+				type: _ModalTypes.error,
+				title: `Cannot get call data for native token wrap`,
+				details: [
+					`Stage: wrapsrceth`,
+					`Error: ${e}`
+				]
+			});
+			throw new Error();
+		}
 
-			try {
-				const txResp = await _web3.eth.sendTransaction(wrapTx.tx);
-			} catch(e: any) {
-				console.log('Cannot wrap native token', e);
-				setModal({
-					type: _ModalTypes.error,
-					title: `Cannot wrap native token`,
-					details: [
-						`Stage: wrapsrceth`,
-						`Error: ${e}`
-					]
-				});
-				throw new Error();
-			}
+		try {
+			const txResp = await _web3.eth.sendTransaction(wrapTx.tx);
+		} catch(e: any) {
+			console.log('Cannot wrap native token', e);
+			setModal({
+				type: _ModalTypes.error,
+				title: `Cannot wrap native token`,
+				details: [
+					`Stage: wrapsrceth`,
+					`Error: ${e}`
+				]
+			});
+			throw new Error();
 		}
 
 		updateStepAdvancedLoader({
